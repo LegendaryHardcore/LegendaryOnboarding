@@ -74,7 +74,6 @@ public class RulesSequence {
                 false,
                 false
         ));
-        //player.setGravity(false);
         player.setInvisible(true);
         player.setInvulnerable(true);
         player.setAllowFlight(true);

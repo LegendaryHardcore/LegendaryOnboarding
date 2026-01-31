@@ -76,11 +76,8 @@ public class JoinSequence {
             if (!player.isOnline()) return;
 
             // Clear effects and restore player state
-            player.removePotionEffect(PotionEffectType.BLINDNESS);
-            //player.setGravity(true);
             player.setGameMode(GameMode.SURVIVAL);
             player.setInvisible(false);
-            player.setInvulnerable(false);
             player.setAllowFlight(false);
             player.setFlying(false);
             player.setFallDistance(0f);
@@ -144,6 +141,7 @@ public class JoinSequence {
                     if (!player.isOnline()) return;
 
                     if (success) {
+                        player.removePotionEffect(PotionEffectType.BLINDNESS);
                         applySoftProtection(player, 5); // seconds
                         plugin.getPendingStore().clearPending(uuid);
 
