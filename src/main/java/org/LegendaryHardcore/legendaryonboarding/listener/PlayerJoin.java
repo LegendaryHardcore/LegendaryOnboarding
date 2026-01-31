@@ -24,7 +24,20 @@ public class PlayerJoin implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         final Player player = event.getPlayer();
         final UUID uuid = player.getUniqueId();
-        final String preGroup = plugin.getConfigData().getPreOnboardGroup();
+
+        // If the player has already accepted, do nothing onboarding-related.
+        if (plugin.getAcceptedStore().isAccepted(uuid)) {
+            plugin.canAcceptRules.put(uuid, false);
+            return;
+        }
+
+        // Ensure command can't be used until rules sequence enables it
+        plugin.canAcceptRules.put(uuid, false);
+
+        // Save the player's 'return to' location once (only if not already stored)
+        if (!plugin.getPendingStore().hasPending(uuid)) {
+            plugin.getPendingStore().setPending(uuid, player.getLocation());
+        }
 
         plugin.canAcceptRules.put(player.getUniqueId(), false);
 

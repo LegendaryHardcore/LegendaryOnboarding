@@ -4,8 +4,6 @@ import org.LegendaryHardcore.legendaryonboarding.command.PlayerAccept;
 import org.LegendaryHardcore.legendaryonboarding.listener.PlayerJoin;
 import org.LegendaryHardcore.legendaryonboarding.listener.PlayerQuit;
 import org.bukkit.plugin.java.JavaPlugin;
-import net.luckperms.api.LuckPerms;
-import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.Bukkit;
 import java.util.Map;
 import java.util.UUID;
@@ -38,39 +36,15 @@ public final class LegendaryOnboarding extends JavaPlugin {
         return this.config;
     }
 
-    private LuckPerms luckPermsApi;
-    public LuckPerms getLuckPermsAPI() {
-        return this.luckPermsApi;
-    }
-
     private AcceptedStore acceptedStore;
     public AcceptedStore getAcceptedStore() { return acceptedStore; }
 
     private PendingStore pendingStore;
     public PendingStore getPendingStore() { return pendingStore; }
 
-    /*
-     *  Get instance of LuckPerms API.
-     *  @return true if API is found, false if not
-     */
-    private boolean initLuckPermsAPI() {
-        RegisteredServiceProvider<LuckPerms> provider = Bukkit.getServicesManager().getRegistration(LuckPerms.class);
-        if (provider != null) {
-            this.luckPermsApi = provider.getProvider();
-            return true;
-        }
-        return false;
-    }
-
     @Override
     public void onEnable() {
         saveDefaultConfig();
-
-        if (!initLuckPermsAPI()) {
-            getLogger().severe("Could not find LuckPerms API.");
-            getServer().getPluginManager().disablePlugin(this);
-            return;
-        }
 
         this.config = new LoadConfig(this).load();
         if (this.config == null) {
