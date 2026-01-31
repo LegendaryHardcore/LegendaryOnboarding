@@ -30,12 +30,12 @@ public class RulesSequence {
         plugin.canAcceptRules.put(uuid, false);
 
         // Freeze player in config specified gamemode at location of onboarding
-        Location onboardLocation = plugin.getConfigData().getOnboardLocation().toLocation();
+        Location onboardLocation = plugin.getConfigData().getOnboardLocation().toLocation(player.getWorld());
 
         // Apply freeze effects 1 tick later
         scheduleFreezeAndTeleport(player, onboardLocation, 1L);
 
-        long t = 0L;
+        long t = 5L;
         t = scheduleWelcome(player, t);
         t = scheduleRules(player, t);
         schedulePromptAccept(player, t);
@@ -54,7 +54,7 @@ public class RulesSequence {
     }
 
     private void applyOnboardingFreeze(Player player) {
-        switch (plugin.getConfigData().getOnboardGamemode()) {
+        switch (plugin.getConfigData().getOnboardGamemode().toUpperCase()) {
             case "CREATIVE" -> player.setGameMode(GameMode.CREATIVE);
             case "ADVENTURE" -> player.setGameMode(GameMode.ADVENTURE);
             case "SPECTATOR" -> player.setGameMode(GameMode.SPECTATOR);
@@ -120,55 +120,3 @@ public class RulesSequence {
     }
 
 }
-
-//
-//        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-//                String serverName = plugin.getConfigData().getServerName();
-//                String playerName = player.getName();
-//                String welcomeMessage = "Welcome to " + serverName + ", " + playerName;
-//                player.sendTitle(welcomeMessage,"", 20, 60, 20);
-//        }, 0);
-//
-//        /* Rules */
-//        List<TitleContent> contents = plugin.getConfigData().getRulesSequenceContent();
-//        final int duration = plugin.getConfigData().getRulesSequenceDuration() * TPS;
-//        final int fadeIn = plugin.getConfigData().getRulesSequenceFadeIn() * TPS;
-//        final int fadeOut = plugin.getConfigData().getRulesSequenceFadeOut() * TPS;
-//
-//        int delay = duration + fadeIn + fadeOut;
-//        int current_delay = 100;
-//
-//        // For each rule in the config, display title and subtitle
-//        for (int i = 0; i < contents.size(); i++) {
-//            final TitleContent content = contents.get(i);
-//
-//            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-//                    String title = content.title();
-//                    String subtitle = content.subtitle();
-//                    player.sendTitle(title, subtitle, fadeIn, duration, fadeOut);
-//
-//            }, current_delay);
-//            current_delay += delay;
-//        }
-//
-//        /* Prompt Accept */
-//        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-//            // Escape if player is offline
-//            if (!player.isOnline()) {
-//                return;
-//            }
-//
-//            plugin.canAcceptRules.put(player.getUniqueId(), true);
-//
-//            // Prompt player to run the /accept command
-//            List<TitleContent> promptContents = plugin.getConfigData().getPromptAccept();
-//            for (TitleContent prompt : promptContents) {
-//                String title = prompt.title();
-//                String subtitle = prompt.subtitle();
-//                player.sendTitle(title, subtitle, 20, 9999, 0);
-//                }
-//
-//            player.sendMessage(plugin.getConfigData().getPromptChat());
-//        },current_delay);
-//    }
-//}

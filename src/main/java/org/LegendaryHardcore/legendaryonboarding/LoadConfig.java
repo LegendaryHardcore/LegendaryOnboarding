@@ -1,12 +1,15 @@
 package org.LegendaryHardcore.legendaryonboarding;
 
-import org.bukkit.configuration.file.FileConfiguration;
 import org.LegendaryHardcore.legendaryonboarding.ConfigData.PlayerLocation;
 import org.LegendaryHardcore.legendaryonboarding.ConfigData.TitleContent;
+import org.bukkit.Bukkit;
+import org.bukkit.World;
+import org.bukkit.configuration.file.FileConfiguration;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.Map;
+import java.util.logging.Level;
 
 /*
  *  Load contents of config
@@ -15,6 +18,7 @@ public class LoadConfig {
     private final LegendaryOnboarding plugin;
 
     public LoadConfig(LegendaryOnboarding plugin) {
+
         this.plugin = plugin;
     }
 
@@ -27,49 +31,55 @@ public class LoadConfig {
 
         try {
             // Server name
-            String serverName = config.getString("SERVER_NAME");
+            String serverName = config.getString("SERVER_NAME", "Minecraft Server");
 
-            // LP pre-onboard and post-onboard groups
-            String preOnboardGroup = config.getString("PRE_ONBOARD_GROUP", "DEFAULT");
-            String postOnboardGroup = config.getString("POST_ONBOARD_GROUP", "player");
+            // Normalize Gamemode
+            String onboardGamemode = config.getString("ONBOARD_GAMEMODE", "SURVIVAL").toUpperCase();
 
-            String onboardGamemode = config.getString("ONBOARD_GAMEMODE", "SURVIVAL");
+            // Location (world name required; provide default)
+            String worldName = config.getString("POS_WORLD", "world");
 
-            // Location
+            // Validate that world exists
+            World w = Bukkit.getWorld(worldName);
+            if (w == null) {
+                plugin.getLogger().severe("[LegendaryOnboarding] World " + worldName + " not found!");
+                return null;
+            }
+
+
             PlayerLocation onboardLocation = new PlayerLocation(
-                    config.getString("POS_WORLD"),
-                    config.getDouble("POS_X"),
-                    config.getDouble("POS_Y"),
-                    config.getDouble("POS_Z"),
-                    (float) config.getDouble("POS_YAW"),
-                    (float) config.getDouble("POS_PITCH")
+                    worldName,
+                    config.getDouble("POS_X", 0.0),
+                    config.getDouble("POS_Y", 120.0),
+                    config.getDouble("POS_Z", 0.0),
+                    (float) config.getDouble("POS_YAW", 0.0),
+                    (float) config.getDouble("POS_PITCH", 0.0)
             );
 
             // Rules sequence
             List<TitleContent> rulesContent = loadTitleContents(config.getList("RULES_SEQUENCE_CONTENT"));
-            int rulesDuration = config.getInt("RULES_SEQUENCE_DURATION");
-            int rulesSequenceFadeIn = config.getInt("RULES_SEQUENCE_FADE_IN");
-            int rulesSequenceFadeOut = config.getInt("RULES_SEQUENCE_FADE_OUT");
+            int rulesDuration = nonNegative(config.getInt("RULES_SEQUENCE_DURATION", 5));
+            int rulesSequenceFadeIn = nonNegative(config.getInt("RULES_SEQUENCE_FADE_IN", 1));
+            int rulesSequenceFadeOut = nonNegative(config.getInt("RULES_SEQUENCE_FADE_OUT", 1));
 
             // Prompt accept (title and chat message)
             List<TitleContent> promptAccept = loadTitleContents(config.getList("PROMPT_ACCEPT"));
-            String promptChat = config.getString("PROMPT_CHAT");
+            String promptChat = config.getString("PROMPT_CHAT", "");
 
             // Join sequence
             List<TitleContent> joinContent = loadTitleContents(config.getList("JOIN_SEQUENCE_CONTENT"));
-            int joinDuration = config.getInt("JOIN_SEQUENCE_DURATION");
-            int joinSequenceFadeIn = config.getInt("JOIN_SEQUENCE_FADE_IN");
-            int joinSequenceFadeOut = config.getInt("JOIN_SEQUENCE_FADE_OUT");
+            int joinDuration = nonNegative(config.getInt("JOIN_SEQUENCE_DURATION", 3));
+            int joinSequenceFadeIn = nonNegative(config.getInt("JOIN_SEQUENCE_FADE_IN", 1));
+            int joinSequenceFadeOut = nonNegative(config.getInt("JOIN_SEQUENCE_FADE_OUT", 1));
 
             // Random spawn
-            int randomSpawnX1 = config.getInt("RANDOM_SPAWN_X1");
-            int randomSpawnZ1 = config.getInt("RANDOM_SPAWN_Z1");
-            int randomSpawnX2 = config.getInt("RANDOM_SPAWN_X2");
-            int randomSpawnZ2 = config.getInt("RANDOM_SPAWN_Z2");
+            int randomSpawnX1 = config.getInt("RANDOM_SPAWN_X1", -3000);
+            int randomSpawnZ1 = config.getInt("RANDOM_SPAWN_Z1", -3000);
+            int randomSpawnX2 = config.getInt("RANDOM_SPAWN_X2", 3000);
+            int randomSpawnZ2 = config.getInt("RANDOM_SPAWN_Z2", 3000);
+
             return new ConfigData(
                     serverName,
-                    preOnboardGroup,
-                    postOnboardGroup,
                     onboardGamemode,
                     onboardLocation,
                     rulesContent,
@@ -94,11 +104,15 @@ public class LoadConfig {
         }
     }
 
+    public static int nonNegative(int value) {
+        return Math.max(0, v);
+    }
+
     /*
      *  Load list of title and subtitles from config
      */
     private List<TitleContent> loadTitleContents(List<?> titleContents) {
-        if (titleContents == null) {
+        if (titleContents == null || titleContents.isEmpty()) {
             return new ArrayList<>();
         }
 

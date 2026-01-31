@@ -9,8 +9,6 @@ import java.util.List;
  */
 public final class ConfigData {
     private final String serverName;
-    private final String preOnboardGroup;
-    private final String postOnboardGroup;
     private final String onboardGamemode;
     private final PlayerLocation onboardLocation;
     private final List<TitleContent> rulesSequenceContent;
@@ -48,20 +46,16 @@ public final class ConfigData {
          *  Try to convert PlayerLocation to a Bukkit Location
          *  @return A Bukkit Location object, or null if the world is not found
          */
-        public Location toLocation() {
+        public Location toLocation(World fallback) {
             World world = org.bukkit.Bukkit.getWorld(worldName);
-            if (world == null) {
-
-                return null;
-            }
+            if (world == null) world = fallback;
+            if (world == null) return null;
             return new Location(world, x, y, z, yaw, pitch);
         }
     }
 
     public ConfigData(
             String serverName,
-            String preOnboardGroup,
-            String postOnboardGroup,
             String onboardGamemode,
             PlayerLocation onboardLocation,
             List<TitleContent> rulesSequenceContent,
@@ -79,8 +73,6 @@ public final class ConfigData {
             int randomSpawnX2,
             int randomSpawnZ2) {
         this.serverName = serverName;
-        this.preOnboardGroup = preOnboardGroup;
-        this.postOnboardGroup = postOnboardGroup;
         this.onboardGamemode = onboardGamemode;
         this.onboardLocation = onboardLocation;
         this.rulesSequenceContent = rulesSequenceContent;
@@ -101,13 +93,6 @@ public final class ConfigData {
 
     public String getServerName() {
         return serverName;
-    }
-    public String getPreOnboardGroup() {
-        return preOnboardGroup;
-    }
-
-    public String getPostOnboardGroup() {
-        return postOnboardGroup;
     }
 
     public String getOnboardGamemode() {
