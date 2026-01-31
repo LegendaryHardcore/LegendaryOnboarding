@@ -30,6 +30,12 @@ public class JoinSequence {
     public void start(Player player) {
         final UUID uuid = player.getUniqueId();
 
+        // HARD GUARD: only allow one join sequence at a time
+        if (!plugin.joinSequenceActive.add(uuid)) {
+            plugin.acceptInProgress.remove(uuid); // avoid deadlock if this was spammed
+            return;
+        }
+
         stopMovementLock(player);
 
         // Reset so player can no longer run /accept
@@ -61,7 +67,10 @@ public class JoinSequence {
         final long finishDelay = currentDelay;
 
         player.getScheduler().runDelayed(plugin, task -> {
-            if (!player.isOnline()) return;
+            if (!player.isOnline()) {
+                clearGuards(uuid);
+                return;
+            }
 
             // Clear effects and restore player state
             player.setGameMode(GameMode.SURVIVAL);
@@ -105,42 +114,53 @@ public class JoinSequence {
         final UUID uuid = player.getUniqueId();
 
         player.getScheduler().run(plugin, task -> {
-            if (!player.isOnline()) return;
+            if (!player.isOnline()) {
+                clearGuards(uuid);
+                return;
+            }
 
-            // Read pending location (safe to read memory map; world access below is on scheduler)
             var pending = plugin.getPendingStore().getPendingLocation(uuid);
 
-            // Fallback: if no pending, use spawn in player's current world
             if (pending == null || pending.getWorld() == null) {
                 pending = player.getWorld().getSpawnLocation();
             }
 
             Location safe = makePhysicallySafe(pending);
             if (safe == null) {
-                // Last resort fallback
                 safe = player.getWorld().getSpawnLocation().add(0.5, 0, 0.5);
             }
 
             Location finalSafe = safe;
-            player.teleportAsync(finalSafe).thenAccept(success -> {
-                // IMPORTANT: teleportAsync callback might not be on the player thread,
-                // so schedule post-teleport actions back onto the player scheduler.
-                player.getScheduler().run(plugin, t2 -> {
-                    if (!player.isOnline()) return;
 
-                    if (success) {
-                        player.removePotionEffect(PotionEffectType.BLINDNESS);
-                        applySoftProtection(player, 5); // seconds
-                        plugin.getPendingStore().clearPending(uuid);
+            player.teleportAsync(finalSafe)
+                    .handle((success, err) -> {
+                        // Always bounce back to the player scheduler for any Bukkit calls
+                        player.getScheduler().run(plugin, t2 -> {
+                            try {
+                                if (!player.isOnline()) return;
 
-                        // Set Accepted (persistent)
-                        plugin.getAcceptedStore().markAccepted(uuid, player.getName());
-                    } else {
-                        plugin.getLogger().warning("Teleport back to pending failed for " + player.getName());
-                        // Keep pending so we can retry later
-                    }
-                }, null);
-            });
+                                if (err != null) {
+                                    plugin.getLogger().warning("Teleport back to pending errored for " + player.getName() + ": " + err.getMessage());
+                                    return;
+                                }
+
+                                if (Boolean.TRUE.equals(success)) {
+                                    player.removePotionEffect(PotionEffectType.BLINDNESS);
+                                    applySoftProtection(player, 5);
+                                    plugin.getPendingStore().clearPending(uuid);
+
+                                    plugin.getAcceptedStore().markAccepted(uuid, player.getName());
+                                } else {
+                                    plugin.getLogger().warning("Teleport back to pending failed for " + player.getName());
+                                }
+                            } finally {
+                                clearGuards(uuid);
+                            }
+                        }, null);
+
+                        return null;
+                    });
+
         }, null);
     }
 
@@ -264,5 +284,11 @@ public class JoinSequence {
         var task = plugin.movementLocks.remove(uuid);
         if (task != null) task.cancel();
     }
+
+    private void clearGuards(UUID uuid) {
+        plugin.acceptInProgress.remove(uuid);
+        plugin.joinSequenceActive.remove(uuid);
+    }
+
 
 }

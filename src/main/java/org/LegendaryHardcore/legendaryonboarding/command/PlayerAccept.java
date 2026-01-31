@@ -34,12 +34,29 @@ public class PlayerAccept implements CommandExecutor {
 
         // Handle player that has already excepted and bail early
         if (plugin.getAcceptedStore().isAccepted(uuid)) {
-            player.sendMessage(ChatColor.RED + "You are already accepted the rules.");
+            player.sendMessage(ChatColor.RED + "You have already accepted the rules.");
+            return true;
+        }
+
+        // Only allow when rules sequence has enabled /accept
+        boolean allowedNow = plugin.canAcceptRules.getOrDefault(uuid, false);
+        if (!allowedNow) {
+            player.sendMessage(ChatColor.RED + "You are not allowed to use this command yet.");
+            return true;
+        }
+
+        // ---- spam guard ----
+        Boolean was = plugin.acceptInProgress.putIfAbsent(uuid, true);
+        if (was != null) {
+            player.sendMessage(ChatColor.GRAY + "Processing...");
             return true;
         }
 
         // Immediately prevent re-running /accept during join sequence
         plugin.canAcceptRules.put(uuid, false);
+
+        // Clear the long-running prompt title
+        player.resetTitle();
 
         // Start join sequence and send player back to their last location
         player.getScheduler().run(plugin, task -> plugin.getJoinSequence().start(player), null);

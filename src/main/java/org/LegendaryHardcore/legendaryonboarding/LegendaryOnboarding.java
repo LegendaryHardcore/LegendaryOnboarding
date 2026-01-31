@@ -48,6 +48,8 @@ public final class LegendaryOnboarding extends JavaPlugin {
     public PendingStore getPendingStore() { return pendingStore; }
 
     public final ConcurrentMap<UUID, ScheduledTask> movementLocks = new ConcurrentHashMap<>();
+    public final ConcurrentHashMap<UUID, Boolean> acceptInProgress = new ConcurrentHashMap<>();
+    public final java.util.Set<UUID> joinSequenceActive = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     @Override
     public void onEnable() {
@@ -91,6 +93,9 @@ public final class LegendaryOnboarding extends JavaPlugin {
     @Override
     public void onDisable() {
         canAcceptRules.clear();
+        acceptInProgress.clear();
+        joinSequenceActive.clear();
+        movementLocks.clear();
 
         if (pendingStore != null) pendingStore.flushNow();
         if (acceptedStore != null) acceptedStore.flushNow();

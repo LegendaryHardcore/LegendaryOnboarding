@@ -18,7 +18,11 @@ public class PlayerQuit implements Listener {
     public void onPlayerQuit(PlayerQuitEvent event) {
 
         plugin.canAcceptRules.remove(event.getPlayer().getUniqueId());
+        plugin.acceptInProgress.remove(event.getPlayer().getUniqueId());
         UUID uuid = event.getPlayer().getUniqueId();
+
+        plugin.joinSequenceActive.remove(uuid);
+
         var task = plugin.movementLocks.remove(uuid);
         if (task != null) task.cancel();
     }
