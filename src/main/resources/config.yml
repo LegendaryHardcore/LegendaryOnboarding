@@ -2,7 +2,7 @@
 SERVER_NAME: "Example Server"
 
 # Set the player's gamemode once they go to onboarding "survival", "creative", "spectator", "adventure"
-ONBOARD_GAMEMODE: "survival"
+ONBOARD_GAMEMODE: "spectator"
 
 # The world and coordinates that the player will be teleported to for onboarding
 POS_WORLD: "world"
