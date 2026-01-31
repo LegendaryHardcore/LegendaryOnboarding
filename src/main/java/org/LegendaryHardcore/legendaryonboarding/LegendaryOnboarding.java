@@ -6,6 +6,8 @@ import org.LegendaryHardcore.legendaryonboarding.storage.PendingStore;
 import org.LegendaryHardcore.legendaryonboarding.command.PlayerAccept;
 import org.LegendaryHardcore.legendaryonboarding.listener.PlayerJoin;
 import org.LegendaryHardcore.legendaryonboarding.listener.PlayerQuit;
+import org.LegendaryHardcore.legendaryonboarding.listener.PlayerChatBlocker;
+import org.LegendaryHardcore.legendaryonboarding.listener.PlayerCommandBlocker;
 
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 
@@ -69,9 +71,11 @@ public final class LegendaryOnboarding extends JavaPlugin {
         this.rulesSequence = new RulesSequence(this);
         this.joinSequence = new JoinSequence(this);
 
-        // Register PlayerJoin and PlayerQuit listeners
+        // Register listeners
         getServer().getPluginManager().registerEvents(new PlayerJoin(this), this);
         getServer().getPluginManager().registerEvents(new PlayerQuit(this), this);
+        getServer().getPluginManager().registerEvents(new PlayerChatBlocker(this), this);
+        getServer().getPluginManager().registerEvents(new PlayerCommandBlocker(this), this);
 
         var acceptCmd = getCommand("accept");
         if (acceptCmd == null) {
