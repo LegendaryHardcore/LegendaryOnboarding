@@ -39,25 +39,8 @@ public class PlayerJoin implements Listener {
             plugin.getPendingStore().setPending(uuid, player.getLocation());
         }
 
-        plugin.canAcceptRules.put(player.getUniqueId(), false);
-
-        // Load LuckPerms async
-        plugin.getLuckPermsAPI().getUserManager().loadUser(uuid).thenAccept(user -> {
-            if (user == null) return;
-
-
-            Collection<Group> groups = user.getInheritedGroups(user.getQueryOptions());
-            boolean isPre = groups.stream().anyMatch(g -> g.getName().equalsIgnoreCase(preGroup));
-            if (!isPre) return;
-
-            // Player might quite while LP was loading
-            if (!player.isOnline()) return;
-
-            //Run on the player's scheduler to keep folia safe
-            player.getScheduler().run(plugin, scheduledTask -> {
-                if (!player.isOnline()) return;
-                plugin.getRulesSequence().start(player);
-            } null);
-        });
+        player.getScheduler().run(plugin, task -> plugin.getRulesSequence().start(player),
+                null
+        );
     }
 }
