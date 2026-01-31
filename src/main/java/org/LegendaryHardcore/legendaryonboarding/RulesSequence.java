@@ -1,9 +1,14 @@
 package org.LegendaryHardcore.legendaryonboarding;
 
 import org.LegendaryHardcore.legendaryonboarding.ConfigData.TitleContent;
+
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.List;
 import java.util.UUID;
@@ -49,6 +54,8 @@ public class RulesSequence {
                 if (!success || !player.isOnline()) return;
 
                 applyOnboardingFreeze(player);
+
+                startMovementLock(player, loc);
             });
         }, null, delayTicks);
     }
@@ -60,7 +67,14 @@ public class RulesSequence {
             case "SPECTATOR" -> player.setGameMode(GameMode.SPECTATOR);
             default -> player.setGameMode(GameMode.SURVIVAL);
         }
-        player.setGravity(false);
+        player.addPotionEffect(new PotionEffect(
+                PotionEffectType.BLINDNESS,
+                Integer.MAX_VALUE,
+                1,
+                false,
+                false
+        ));
+        //player.setGravity(false);
         player.setInvisible(true);
         player.setInvulnerable(true);
         player.setAllowFlight(true);
@@ -121,5 +135,47 @@ public class RulesSequence {
             player.sendMessage(plugin.getConfigData().getPromptChat());
         }, null, startTick);
     }
+
+    private void startMovementLock(Player player, Location anchor) {
+        final UUID uuid = player.getUniqueId();
+
+        // cancel any old lock just in case
+        ScheduledTask old = plugin.movementLocks.remove(uuid);
+        if (old != null) old.cancel();
+
+        Location fixed = anchor.clone();
+        fixed.setX(fixed.getBlockX() + 0.5);
+        fixed.setZ(fixed.getBlockZ() + 0.5);
+
+        ScheduledTask task = player.getScheduler().runAtFixedRate(plugin, t -> {
+            if (!player.isOnline()) {
+                t.cancel();
+                plugin.movementLocks.remove(uuid);
+                return;
+            }
+
+            // hard stop movement
+            player.setVelocity(player.getVelocity().zero());
+
+            // if they drifted at all, snap back
+            Location cur = player.getLocation();
+            if (cur.getWorld() != fixed.getWorld()) {
+                player.teleportAsync(fixed);
+                return;
+            }
+
+            double dx = cur.getX() - fixed.getX();
+            double dy = cur.getY() - fixed.getY();
+            double dz = cur.getZ() - fixed.getZ();
+
+            // tiny tolerance to avoid micro jitter
+            if (Math.abs(dx) > 0.05 || Math.abs(dy) > 0.05 || Math.abs(dz) > 0.05) {
+                player.teleportAsync(fixed);
+            }
+        }, null, 1L, 2L); // start after 1 tick, repeat every 2 ticks
+
+        plugin.movementLocks.put(uuid, task);
+    }
+
 
 }

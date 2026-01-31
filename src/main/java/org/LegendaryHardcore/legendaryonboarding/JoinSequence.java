@@ -30,20 +30,22 @@ public class JoinSequence {
     public void start(Player player) {
         final UUID uuid = player.getUniqueId();
 
+        stopMovementLock(player);
+
         // Reset so player can no longer run /accept
         plugin.canAcceptRules.put(uuid, false);
 
         // Give the player blindness and other stasis effects
-        player.getScheduler().runDelayed(plugin, task -> {
-            if (!player.isOnline()) return;
-            player.addPotionEffect(new PotionEffect(
-                    PotionEffectType.BLINDNESS,
-                    Integer.MAX_VALUE,
-                    1,
-                    false,
-                    false
-            ));
-        }, null, 1L);
+//        player.getScheduler().runDelayed(plugin, task -> {
+//            if (!player.isOnline()) return;
+//            player.addPotionEffect(new PotionEffect(
+//                    PotionEffectType.BLINDNESS,
+//                    Integer.MAX_VALUE,
+//                    1,
+//                    false,
+//                    false
+//            ));
+//        }, null, 1L);
 
         // Join Sequence title timing
         List<TitleContent> contents = plugin.getConfigData().getJoinSequenceContent();
@@ -75,7 +77,7 @@ public class JoinSequence {
 
             // Clear effects and restore player state
             player.removePotionEffect(PotionEffectType.BLINDNESS);
-            player.setGravity(true);
+            //player.setGravity(true);
             player.setGameMode(GameMode.SURVIVAL);
             player.setInvisible(false);
             player.setInvulnerable(false);
@@ -269,6 +271,12 @@ public class JoinSequence {
 
     private static long min1(long ticks) {
         return Math.max(1L, ticks);
+    }
+
+    private void stopMovementLock(Player player) {
+        UUID uuid = player.getUniqueId();
+        var task = plugin.movementLocks.remove(uuid);
+        if (task != null) task.cancel();
     }
 
 }
