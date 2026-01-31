@@ -37,7 +37,7 @@ JOIN_SEQUENCE_CONTENT:
   - TITLE: "This is a dramatic title sequence"
     SUBTITLE: ""
   - TITLE: ""
-    SUBTITLE: "and then the player is randomly teleported"
+    SUBTITLE: "and then the player is teleported back to where they were"
 
 # How many seconds each join message should fade in, be displayed for and fade out
 JOIN_SEQUENCE_FADE_IN: 1

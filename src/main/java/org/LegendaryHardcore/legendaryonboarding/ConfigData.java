@@ -21,10 +21,6 @@ public final class ConfigData {
     private final int joinSequenceDuration;
     private final int joinSequenceFadeIn;
     private final int joinSequenceFadeOut;
-    private final int randomSpawnX1;
-    private final int randomSpawnZ1;
-    private final int randomSpawnX2;
-    private final int randomSpawnZ2;
 
     // Title content
     public record TitleContent(
@@ -67,11 +63,7 @@ public final class ConfigData {
             List<TitleContent> joinSequenceContent,
             int joinSequenceDuration,
             int joinSequenceFadeIn,
-            int joinSequenceFadeOut,
-            int randomSpawnX1,
-            int randomSpawnZ1,
-            int randomSpawnX2,
-            int randomSpawnZ2) {
+            int joinSequenceFadeOut) {
         this.serverName = serverName;
         this.onboardGamemode = onboardGamemode;
         this.onboardLocation = onboardLocation;
@@ -85,10 +77,6 @@ public final class ConfigData {
         this.joinSequenceDuration = joinSequenceDuration;
         this.joinSequenceFadeIn = joinSequenceFadeIn;
         this.joinSequenceFadeOut = joinSequenceFadeOut;
-        this.randomSpawnX1 = randomSpawnX1;
-        this.randomSpawnZ1 = randomSpawnZ1;
-        this.randomSpawnX2 = randomSpawnX2;
-        this.randomSpawnZ2 = randomSpawnZ2;
     }
 
     public String getServerName() {
@@ -141,21 +129,5 @@ public final class ConfigData {
 
     public int getJoinSequenceFadeOut() {
         return joinSequenceFadeOut;
-    }
-
-    public int getRandomSpawnX1() {
-        return randomSpawnX1;
-    }
-
-    public int getRandomSpawnZ1() {
-        return randomSpawnZ1;
-    }
-
-    public int getRandomSpawnX2() {
-        return randomSpawnX2;
-    }
-
-    public int getRandomSpawnZ2() {
-        return randomSpawnZ2;
     }
 }

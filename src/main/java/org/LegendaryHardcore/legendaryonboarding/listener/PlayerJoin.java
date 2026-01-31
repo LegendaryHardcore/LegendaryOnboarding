@@ -5,8 +5,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
-import net.luckperms.api.model.user.User;
-import net.luckperms.api.model.group.Group;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;

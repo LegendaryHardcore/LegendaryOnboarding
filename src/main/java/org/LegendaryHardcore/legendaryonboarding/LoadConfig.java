@@ -57,26 +57,20 @@ public class LoadConfig {
             );
 
             // Rules sequence
-            List<TitleContent> rulesContent = loadTitleContents(config.getList("RULES_SEQUENCE_CONTENT"));
+            List<TitleContent> rulesContent = loadTitleContents(config.getMapList("RULES_SEQUENCE_CONTENT"));
             int rulesDuration = nonNegative(config.getInt("RULES_SEQUENCE_DURATION", 5));
             int rulesSequenceFadeIn = nonNegative(config.getInt("RULES_SEQUENCE_FADE_IN", 1));
             int rulesSequenceFadeOut = nonNegative(config.getInt("RULES_SEQUENCE_FADE_OUT", 1));
 
             // Prompt accept (title and chat message)
-            List<TitleContent> promptAccept = loadTitleContents(config.getList("PROMPT_ACCEPT"));
+            List<TitleContent> promptAccept = loadTitleContents(config.getMapList("PROMPT_ACCEPT"));
             String promptChat = config.getString("PROMPT_CHAT", "");
 
             // Join sequence
-            List<TitleContent> joinContent = loadTitleContents(config.getList("JOIN_SEQUENCE_CONTENT"));
+            List<TitleContent> joinContent = loadTitleContents(config.getMapList("JOIN_SEQUENCE_CONTENT"));
             int joinDuration = nonNegative(config.getInt("JOIN_SEQUENCE_DURATION", 3));
             int joinSequenceFadeIn = nonNegative(config.getInt("JOIN_SEQUENCE_FADE_IN", 1));
             int joinSequenceFadeOut = nonNegative(config.getInt("JOIN_SEQUENCE_FADE_OUT", 1));
-
-            // Random spawn
-            int randomSpawnX1 = config.getInt("RANDOM_SPAWN_X1", -3000);
-            int randomSpawnZ1 = config.getInt("RANDOM_SPAWN_Z1", -3000);
-            int randomSpawnX2 = config.getInt("RANDOM_SPAWN_X2", 3000);
-            int randomSpawnZ2 = config.getInt("RANDOM_SPAWN_Z2", 3000);
 
             return new ConfigData(
                     serverName,
@@ -91,11 +85,7 @@ public class LoadConfig {
                     joinContent,
                     joinDuration,
                     joinSequenceFadeIn,
-                    joinSequenceFadeOut,
-                    randomSpawnX1,
-                    randomSpawnZ1,
-                    randomSpawnX2,
-                    randomSpawnZ2
+                    joinSequenceFadeOut
             );
 
         } catch (Exception e) {
@@ -105,13 +95,13 @@ public class LoadConfig {
     }
 
     public static int nonNegative(int value) {
-        return Math.max(0, v);
+        return Math.max(0, value);
     }
 
     /*
      *  Load list of title and subtitles from config
      */
-    private List<TitleContent> loadTitleContents(List<?> titleContents) {
+    private List<TitleContent> loadTitleContents(List<Map<?, ?>> titleContents) {
         if (titleContents == null || titleContents.isEmpty()) {
             return new ArrayList<>();
         }
