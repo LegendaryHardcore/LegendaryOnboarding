@@ -35,18 +35,6 @@ public class JoinSequence {
         // Reset so player can no longer run /accept
         plugin.canAcceptRules.put(uuid, false);
 
-        // Give the player blindness and other stasis effects
-//        player.getScheduler().runDelayed(plugin, task -> {
-//            if (!player.isOnline()) return;
-//            player.addPotionEffect(new PotionEffect(
-//                    PotionEffectType.BLINDNESS,
-//                    Integer.MAX_VALUE,
-//                    1,
-//                    false,
-//                    false
-//            ));
-//        }, null, 1L);
-
         // Join Sequence title timing
         List<TitleContent> contents = plugin.getConfigData().getJoinSequenceContent();
         final int duration = plugin.getConfigData().getJoinSequenceDuration() * TPS;

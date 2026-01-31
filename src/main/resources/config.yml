@@ -4,6 +4,9 @@ SERVER_NAME: "Example Server"
 # Set the player's gamemode once they go to onboarding "survival", "creative", "spectator", "adventure"
 ONBOARD_GAMEMODE: "spectator"
 
+# Should we teleport the player for onboarding? If false: player will go through onboarding in place where they spawn/load in.
+ONBOARD_TELEPORT: false
+
 # The world and coordinates that the player will be teleported to for onboarding
 POS_WORLD: "world"
 POS_X: 0

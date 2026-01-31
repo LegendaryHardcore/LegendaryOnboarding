@@ -39,6 +39,9 @@ public class LoadConfig {
             // Location (world name required; provide default)
             String worldName = config.getString("POS_WORLD", "world");
 
+            // Are we teleporting the player?
+            boolean onboardTeleport = config.getBoolean("ONBOARD_TELEPORT", true);
+
             // Validate that world exists
             World w = Bukkit.getWorld(worldName);
             if (w == null) {
@@ -85,7 +88,8 @@ public class LoadConfig {
                     joinContent,
                     joinDuration,
                     joinSequenceFadeIn,
-                    joinSequenceFadeOut
+                    joinSequenceFadeOut,
+                    onboardTeleport
             );
 
         } catch (Exception e) {
@@ -102,9 +106,7 @@ public class LoadConfig {
      *  Load list of title and subtitles from config
      */
     private List<TitleContent> loadTitleContents(List<Map<?, ?>> titleContents) {
-        if (titleContents == null || titleContents.isEmpty()) {
-            return new ArrayList<>();
-        }
+        if (titleContents == null || titleContents.isEmpty()) return new ArrayList<>();
 
         List<TitleContent> contents = new ArrayList<>();
         for (Object item : titleContents) {

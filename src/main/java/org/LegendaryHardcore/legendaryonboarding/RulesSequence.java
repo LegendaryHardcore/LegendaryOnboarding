@@ -34,11 +34,26 @@ public class RulesSequence {
         // Ensure that player does not run /accept before all rules have been displayed
         plugin.canAcceptRules.put(uuid, false);
 
-        // Freeze player in config specified gamemode at location of onboarding
-        Location onboardLocation = plugin.getConfigData().getOnboardLocation().toLocation(player.getWorld());
+        // Determine where the intro should happen
+        final Location anchor;
+        if (plugin.getConfigData().isOnboardTeleport()) {
+            anchor = plugin.getConfigData().getOnboardLocation().toLocation(player.getWorld());
+        } else {
+            // "in place" intro: use where they are right now
+            anchor = player.getLocation().clone();
+        }
 
-        // Apply freeze effects 1 tick later
-        scheduleFreezeAndTeleport(player, onboardLocation, 1L);
+        // Teleport only if enabled, otherwise just freeze where the player is
+        if (plugin.getConfigData().isOnboardTeleport()) {
+            scheduleFreezeAndTeleport(player, anchor, 1L);
+        } else {
+            // Freeze without teleport but still schedule 1 tick later for consistency
+            player.getScheduler().runDelayed(plugin, t -> {
+                if (!player.isOnline()) return;
+                applyOnboardingFreeze(player);
+                startMovementLock(player, anchor);
+            }, null, 1L);
+        }
 
         long t = 5L;
         t = scheduleWelcome(player, t);
@@ -146,6 +161,10 @@ public class RulesSequence {
         fixed.setX(fixed.getBlockX() + 0.5);
         fixed.setZ(fixed.getBlockZ() + 0.5);
 
+        // lock facing too
+        final float lockYaw = fixed.getYaw();
+        final float lockPitch = fixed.getPitch();
+
         ScheduledTask task = player.getScheduler().runAtFixedRate(plugin, t -> {
             if (!player.isOnline()) {
                 t.cancel();
@@ -167,14 +186,31 @@ public class RulesSequence {
             double dy = cur.getY() - fixed.getY();
             double dz = cur.getZ() - fixed.getZ();
 
+            // normalize yaw delta to [-180, 180]
+            float yawDelta = wrapDegrees(cur.getYaw() - lockYaw);
+            float pitchDelta = cur.getPitch() - lockPitch;
+
             // tiny tolerance to avoid micro jitter
-            if (Math.abs(dx) > 0.05 || Math.abs(dy) > 0.05 || Math.abs(dz) > 0.05) {
-                player.teleportAsync(fixed);
+            boolean moved = Math.abs(dx) > 0.05 || Math.abs(dy) > 0.05 || Math.abs(dz) > 0.05;
+            boolean turned = Math.abs(yawDelta) > 1.5f || Math.abs(pitchDelta) > 1.5f;
+
+            // Return player to locked position if they've moved or turned
+            if (moved || turned) {
+                Location tp = fixed.clone();
+                tp.setYaw(lockYaw);
+                tp.setPitch(lockPitch);
+                player.teleportAsync(tp);
             }
         }, null, 1L, 2L); // start after 1 tick, repeat every 2 ticks
 
         plugin.movementLocks.put(uuid, task);
     }
 
+    private static float wrapDegrees(float degrees) {
+        degrees %= 360.0f;
+        if (degrees >= 180.0f) degrees -= 360.0f;
+        if (degrees < -180.0f) degrees += 360.0f;
+        return degrees;
+    }
 
 }
