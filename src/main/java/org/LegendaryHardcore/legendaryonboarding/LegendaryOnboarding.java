@@ -11,6 +11,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+// Import plugin content
+import org.LegendaryHardcore.legendaryonboarding.storage.AcceptedStore;
+import org.LegendaryHardcore.legendaryonboarding.storage.PendingStore;
+
 /*
  *   Main Onboard plugin class
  */
@@ -38,6 +42,12 @@ public final class LegendaryOnboarding extends JavaPlugin {
     public LuckPerms getLuckPermsAPI() {
         return this.luckPermsApi;
     }
+
+    private AcceptedStore acceptedStore;
+    public AcceptedStore getAcceptedStore() { return acceptedStore; }
+
+    private PendingStore pendingStore;
+    public PendingStore getPendingStore() { return pendingStore; }
 
     /*
      *  Get instance of LuckPerms API.
@@ -69,7 +79,14 @@ public final class LegendaryOnboarding extends JavaPlugin {
             return;
         }
 
-        // Initalise sequences classes
+        // Initialize storage classes
+        this.acceptedStore = new AcceptedStore(this);
+        this.pendingStore = new PendingStore(this);
+
+        this.acceptedStore.load();
+        this.pendingStore.load();
+
+        // Initialize sequences classes
         this.rulesSequence = new RulesSequence(this);
         this.joinSequence = new JoinSequence(this);
 
@@ -77,13 +94,24 @@ public final class LegendaryOnboarding extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlayerJoin(this), this);
         getServer().getPluginManager().registerEvents(new PlayerQuit(this), this);
 
-        getCommand("accept").setExecutor(new PlayerAccept(this));
-        getLogger().info("Onboard enabled.");
+        var acceptCmd = getCommand("accept");
+        if (acceptCmd == null) {
+            getLogger().severe("Command 'accept' is missing from plugin.yml");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+        acceptCmd.setExecutor(new PlayerAccept(this));
+
+        getLogger().info("LegendaryOnboarding enabled.");
     }
 
     @Override
     public void onDisable() {
         canAcceptRules.clear();
+
+        if (pendingStore != null) pendingStore.flushNow();
+        if (acceptedStore != null) acceptedStore.flushNow();
     }
+
 
 }
