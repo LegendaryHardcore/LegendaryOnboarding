@@ -1,17 +1,20 @@
 package org.LegendaryHardcore.legendaryonboarding;
 
-import org.LegendaryHardcore.legendaryonboarding.command.PlayerAccept;
-import org.LegendaryHardcore.legendaryonboarding.listener.PlayerJoin;
-import org.LegendaryHardcore.legendaryonboarding.listener.PlayerQuit;
-import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.Bukkit;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-
 // Import plugin content
 import org.LegendaryHardcore.legendaryonboarding.storage.AcceptedStore;
 import org.LegendaryHardcore.legendaryonboarding.storage.PendingStore;
+import org.LegendaryHardcore.legendaryonboarding.command.PlayerAccept;
+import org.LegendaryHardcore.legendaryonboarding.listener.PlayerJoin;
+import org.LegendaryHardcore.legendaryonboarding.listener.PlayerQuit;
+
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+
+import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /*
  *   Main Onboard plugin class
@@ -41,6 +44,8 @@ public final class LegendaryOnboarding extends JavaPlugin {
 
     private PendingStore pendingStore;
     public PendingStore getPendingStore() { return pendingStore; }
+
+    public final ConcurrentMap<UUID, ScheduledTask> movementLocks = new ConcurrentHashMap<>();
 
     @Override
     public void onEnable() {

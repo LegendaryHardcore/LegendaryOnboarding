@@ -23,6 +23,9 @@ public class PlayerJoin implements Listener {
         final Player player = event.getPlayer();
         final UUID uuid = player.getUniqueId();
 
+        // Always record their latest name
+        plugin.getAcceptedStore().recordSeenName(uuid, player.getName());
+
         // If the player has already accepted, do nothing onboarding-related.
         if (plugin.getAcceptedStore().isAccepted(uuid)) {
             plugin.canAcceptRules.put(uuid, false);

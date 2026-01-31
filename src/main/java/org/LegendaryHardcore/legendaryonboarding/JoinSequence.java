@@ -146,7 +146,7 @@ public class JoinSequence {
                         plugin.getPendingStore().clearPending(uuid);
 
                         // Set Accepted (persistent)
-                        plugin.getAcceptedStore().setAccepted(uuid, true);
+                        plugin.getAcceptedStore().markAccepted(uuid, player.getName());
                     } else {
                         plugin.getLogger().warning("Teleport back to pending failed for " + player.getName());
                         // Keep pending so we can retry later
