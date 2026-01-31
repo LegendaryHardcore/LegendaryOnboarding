@@ -24,6 +24,7 @@ public class PlayerAccept implements CommandExecutor {
                              @NotNull Command command,
                              @NotNull String label,
                              @NotNull String[] args) {
+
         if (!(sender instanceof Player player)) {
             sender.sendMessage(ChatColor.RED + "This command can't be run from console.");
             return true;
@@ -31,20 +32,17 @@ public class PlayerAccept implements CommandExecutor {
 
         final UUID uuid = player.getUniqueId();
 
-        boolean allowedNow = plugin.canAcceptRules.getOrDefault(uuid, false);
-        if (!allowedNow) {
-            player.sendMessage(ChatColor.RED + "You are not allowed to use this command.");
+        // Handle player that has already excepted and bail early
+        if (plugin.getAcceptedStore().isAccepted(uuid)) {
+            player.sendMessage(ChatColor.RED + "You are already accepted the rules.");
             return true;
         }
-
-        // Mark accepted (persistent)
-        plugin.getAcceptedStore().setAccepted(uuid, true);
 
         // Immediately prevent re-running /accept during join sequence
         plugin.canAcceptRules.put(uuid, false);
 
         // Start join sequence and send player back to their last location
-        plugin.getJoinSequence().start(player);
+        player.getScheduler().run(plugin, task -> plugin.getJoinSequence().start(player), null);
         return true;
     }
 }

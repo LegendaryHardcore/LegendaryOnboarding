@@ -3,7 +3,11 @@ version: ${version}
 main: org.LegendaryHardcore.legendaryonboarding.LegendaryOnboarding
 api-version: '1.21'
 
-folia-supported: false
+folia-supported: true
+
+authors:
+  - Natonite
+  - Thowan
 
 commands:
   accept:

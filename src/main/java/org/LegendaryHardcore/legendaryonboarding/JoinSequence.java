@@ -52,7 +52,7 @@ public class JoinSequence {
         final int fadeOut = plugin.getConfigData().getJoinSequenceFadeOut() * TPS;
 
         final int perMessageDelay = duration + fadeIn + fadeOut;
-        long currentDelay = 0L;
+        long currentDelay = 1L;
 
         // For each join sequence message, schedule each title/subtitles
         for (TitleContent content : contents) {
@@ -62,7 +62,7 @@ public class JoinSequence {
             player.getScheduler().runDelayed(plugin, task -> {
                 if (!player.isOnline()) return;
                 player.sendTitle(c.title(), c.subtitle(), fadeIn, duration, fadeOut);
-            }, null, scheduledDelay);
+            }, null, min1(scheduledDelay));
 
             currentDelay += perMessageDelay;
         }
@@ -79,9 +79,12 @@ public class JoinSequence {
             player.setGameMode(GameMode.SURVIVAL);
             player.setInvisible(false);
             player.setInvulnerable(false);
+            player.setAllowFlight(false);
+            player.setFlying(false);
+            player.setFallDistance(0f);
 
             returnToPendingSoftSafe(player);
-        }, null, finishDelay);
+        }, null, min1(finishDelay));
     }
 
 
@@ -141,6 +144,9 @@ public class JoinSequence {
                     if (success) {
                         applySoftProtection(player, 5); // seconds
                         plugin.getPendingStore().clearPending(uuid);
+
+                        // Set Accepted (persistent)
+                        plugin.getAcceptedStore().setAccepted(uuid, true);
                     } else {
                         plugin.getLogger().warning("Teleport back to pending failed for " + player.getName());
                         // Keep pending so we can retry later
@@ -258,8 +264,11 @@ public class JoinSequence {
             player.setInvulnerable(false);
             // Let potion expire naturally, or clear it explicitly:
             // player.removePotionEffect(PotionEffectType.RESISTANCE);
-        }, null, ticks);
+        }, null, min1(ticks));
     }
 
+    private static long min1(long ticks) {
+        return Math.max(1L, ticks);
+    }
 
 }

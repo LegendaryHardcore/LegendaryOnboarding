@@ -63,6 +63,9 @@ public class RulesSequence {
         player.setGravity(false);
         player.setInvisible(true);
         player.setInvulnerable(true);
+        player.setAllowFlight(true);
+        player.setFlying(true);
+        player.setFallDistance(0f);
     }
 
     private long scheduleWelcome(Player player, long startTick) {
