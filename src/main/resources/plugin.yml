@@ -1,9 +1,17 @@
-name: Onboard
-version: '1.0-SNAPSHOT'
-main: org.LegendaryHardcore.onboard.Onboard
+name: ${name}
+version: ${version}
+main: org.LegendaryHardcore.legendaryonboarding.LegendaryOnboarding
 api-version: '1.21'
+
+folia-supported: false
 
 commands:
   accept:
     description: Accept the server rules
     usage: /accept
+    permission: legendaryonboarding.accept
+
+
+permissions:
+  legendaryonboarding.accept:
+    default: true

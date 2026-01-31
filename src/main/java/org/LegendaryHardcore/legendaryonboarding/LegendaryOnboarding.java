@@ -1,5 +1,8 @@
-package org.LegendaryHardcore.onboard;
+package org.LegendaryHardcore.legendaryonboarding;
 
+import org.LegendaryHardcore.legendaryonboarding.command.PlayerAccept;
+import org.LegendaryHardcore.legendaryonboarding.listener.PlayerJoin;
+import org.LegendaryHardcore.legendaryonboarding.listener.PlayerQuit;
 import org.bukkit.plugin.java.JavaPlugin;
 import net.luckperms.api.LuckPerms;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -11,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /*
  *   Main Onboard plugin class
  */
-public final class Onboard extends JavaPlugin {
+public final class LegendaryOnboarding extends JavaPlugin {
 
     // Track whether each player can use /accept
     public final Map<UUID, Boolean> canAcceptRules = new ConcurrentHashMap<>();
@@ -80,7 +83,6 @@ public final class Onboard extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        Bukkit.getScheduler().cancelTasks(this);
         canAcceptRules.clear();
     }
 

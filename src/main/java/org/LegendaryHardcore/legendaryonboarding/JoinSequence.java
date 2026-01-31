@@ -1,4 +1,4 @@
-package org.LegendaryHardcore.onboard;
+package org.LegendaryHardcore.legendaryonboarding;
 
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.node.NodeType;
@@ -7,7 +7,9 @@ import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.LegendaryHardcore.onboard.ConfigData.TitleContent;
+import org.LegendaryHardcore.legendaryonboarding.ConfigData.TitleContent;
+
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.List;
 
@@ -16,22 +18,26 @@ import java.util.List;
  *  Displays join messages and assigns player to post-onboard group
  */
 public class JoinSequence {
-    private final Onboard plugin;
+    private final LegendaryOnboarding plugin;
 
     // For converting seconds to ticks (1 second = 20 ticks)
     private static final int TPS = 20;
 
-    public JoinSequence(Onboard plugin) {
+    public JoinSequence(LegendaryOnboarding plugin) {
+
         this.plugin = plugin;
     }
 
     public void start(Player player) {
+        final UUID uuid = player.getUniqueId();
+
         // Reset so player can no longer run /accept
-        plugin.canAcceptRules.put(player.getUniqueId(), false);
+        plugin.canAcceptRules.put(uuid, false);
 
         // Give player blindness
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            player.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 9999, 1, false, false));
+        player.getScheduler().runDelayed(plugin, task -> {
+            if (!player.isOnline()) return;
+            player.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, Integer.MAX_VALUE, 1, false, false));
         }, 1L);
 
         /* Join Sequence */
@@ -40,49 +46,53 @@ public class JoinSequence {
         final int fadeIn = plugin.getConfigData().getJoinSequenceFadeIn() * TPS;
         final int fadeOut = plugin.getConfigData().getJoinSequenceFadeOut() * TPS;
 
-        int delay = duration + fadeIn + fadeOut;
-        int current_delay = 0;
+        final int perMessageDelay = duration + fadeIn + fadeOut;
+        long currentDelay = 0L;
 
         // For each join sequence message, display title and subtitle
-        for (int i = 0; i < contents.size(); i++) {
-            final TitleContent content = contents.get(i);
+        for (TitleContent content : contents) {
+            final TitleContent c = content;
+            final long scheduleDelay = currentDelay;
+
+            player.getScheduler().runDelayed(plugin,task -> {
+                if (!player.isOnline()) return;
+                player.sendTitle(c.title(), c.subtitle(), fadeIn, fadeOut, scheduleDelay);
+
+                currentDelay += perMessageDelay;
+            }
+
+            // Final step after titles
+                    final long finishDelay = currentDelay;
+
+            player.getScheduler().runDelayed(plugin, task -> {
+                if (!player.isOnline()) return;
+
+                // Clear effects and restore player state
+                player.removePotionEffect(PotionEffectType.BLINDNESS);
+                player.setGravity(true);
+                player.setGameMode(GameMode.SURVIVAL);
+                player.setInvisible(false);
+                player.setInvulnerable(false);
+
+                teleportToRandomLocationAndFinalize(player);
+            }, finishDelay);
+        }
+
+            )
+
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                 String title = content.title();
                 String subtitle = content.subtitle();
                 player.sendTitle(title, subtitle, fadeIn, duration, fadeOut);
-            }, current_delay);
-            current_delay += delay;
+            }, currentDelay);
+            currentDelay += perMessageDelay;
         }
-
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            // Clear effects and set gamemdode back to survival
-            player.removePotionEffect(PotionEffectType.BLINDNESS);
-            player.setGravity(true);
-            player.setGameMode(GameMode.SURVIVAL);
-            player.setInvisible(false);
-            player.setInvulnerable(false);
-
-            // Teleport to random location
-            final int randomSpawnX1 = plugin.getConfigData().getRandomSpawnX1();
-            final int randomSpawnZ1 = plugin.getConfigData().getRandomSpawnZ1();
-            final int randomSpawnX2 = plugin.getConfigData().getRandomSpawnX2();
-            final int randomSpawnZ2 = plugin.getConfigData().getRandomSpawnZ2();
-
-            String mainWorldName = plugin.getConfigData().getOnboardLocation().worldName();
-            World mainWorld = Bukkit.getWorld(mainWorldName);
-            int x = ThreadLocalRandom.current().nextInt(randomSpawnX1, randomSpawnX2);
-            int z = ThreadLocalRandom.current().nextInt(randomSpawnZ1, randomSpawnZ2);
-            int y = mainWorld.getHighestBlockYAt(x, z);
-
-            Location randomLoc = new Location(mainWorld, x + 0.5, y + 1, z + 0.5);
-            player.teleport(randomLoc);
-
-            // Move player to post-onboard group
-            updateLuckPermsGroup(player);
-            plugin.canAcceptRules.put(player.getUniqueId(), false);
-            }, current_delay);
-
     }
+
+    /*
+    Check the original location the player was at, make sure it's safe to teleport back, and after fixes, teleport
+     */
+
     /*
      * Asynchronously move player to post-onboard group
      */

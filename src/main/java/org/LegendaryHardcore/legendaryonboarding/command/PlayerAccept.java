@@ -1,5 +1,6 @@
-package org.LegendaryHardcore.onboard;
+package org.LegendaryHardcore.legendaryonboarding.command;
 
+import org.LegendaryHardcore.legendaryonboarding.LegendaryOnboarding;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -8,9 +9,9 @@ import org.bukkit.entity.Player;
 
 
 public class PlayerAccept implements CommandExecutor {
-    private final Onboard plugin;
+    private final LegendaryOnboarding plugin;
 
-    public PlayerAccept(Onboard plugin) {
+    public PlayerAccept(LegendaryOnboarding plugin) {
         this.plugin = plugin;
     }
 

@@ -1,4 +1,4 @@
-package org.LegendaryHardcore.onboard;
+package org.LegendaryHardcore.legendaryonboarding;
 
 import org.bukkit.Location;
 import org.bukkit.World;

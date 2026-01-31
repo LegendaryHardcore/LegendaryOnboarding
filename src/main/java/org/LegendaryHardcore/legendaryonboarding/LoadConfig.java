@@ -1,9 +1,8 @@
-package org.LegendaryHardcore.onboard;
+package org.LegendaryHardcore.legendaryonboarding;
 
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.LegendaryHardcore.onboard.ConfigData.PlayerLocation;
-import org.LegendaryHardcore.onboard.ConfigData.TitleContent;
+import org.LegendaryHardcore.legendaryonboarding.ConfigData.PlayerLocation;
+import org.LegendaryHardcore.legendaryonboarding.ConfigData.TitleContent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -13,9 +12,9 @@ import java.util.Map;
  *  Load contents of config
  */
 public class LoadConfig {
-    private final Onboard plugin;
+    private final LegendaryOnboarding plugin;
 
-    public LoadConfig(Onboard plugin) {
+    public LoadConfig(LegendaryOnboarding plugin) {
         this.plugin = plugin;
     }
 

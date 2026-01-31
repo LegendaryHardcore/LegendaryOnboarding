@@ -1,9 +1,9 @@
-package org.LegendaryHardcore.onboard;
+package org.LegendaryHardcore.legendaryonboarding;
 
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
-import org.LegendaryHardcore.onboard.ConfigData.TitleContent;
+import org.LegendaryHardcore.legendaryonboarding.ConfigData.TitleContent;
 import java.util.List;
 
 /*
@@ -11,12 +11,12 @@ import java.util.List;
  *  Displays welcome message, rules and prompts user to accept the rules
  */
 public class RulesSequence {
-    private final Onboard plugin;
+    private final LegendaryOnboarding plugin;
 
     // For converting seconds to ticks (1 second = 20 ticks)
     private static final int TPS = 20;
 
-    public RulesSequence(Onboard plugin) {
+    public RulesSequence(LegendaryOnboarding plugin) {
         this.plugin = plugin;
     }
 
