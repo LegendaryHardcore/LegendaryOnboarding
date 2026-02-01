@@ -36,10 +36,9 @@ public class JoinSequence {
             return;
         }
 
-        stopMovementLock(player);
-
         // Reset so player can no longer run /accept
         plugin.canAcceptRules.put(uuid, false);
+        plugin.startMovementLock(player, player.getLocation(), true);
 
         // Join Sequence title timing
         List<TitleContent> contents = plugin.getConfigData().getJoinSequenceContent();
@@ -148,7 +147,7 @@ public class JoinSequence {
                                     player.removePotionEffect(PotionEffectType.BLINDNESS);
                                     applySoftProtection(player, 5);
                                     plugin.getPendingStore().clearPending(uuid);
-
+                                    plugin.stopMovementLock(uuid);
                                     plugin.getAcceptedStore().markAccepted(uuid, player.getName());
                                 } else {
                                     plugin.getLogger().warning("Teleport back to pending failed for " + player.getName());
