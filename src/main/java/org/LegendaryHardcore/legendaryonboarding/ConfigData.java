@@ -22,6 +22,7 @@ public final class ConfigData {
     private final int joinSequenceFadeIn;
     private final int joinSequenceFadeOut;
     private final boolean onboardTeleport;
+    private final List<String> commandWhitelist;
 
     // Title content
     public record TitleContent(
@@ -65,6 +66,7 @@ public final class ConfigData {
             int joinSequenceDuration,
             int joinSequenceFadeIn,
             int joinSequenceFadeOut,
+            List<String> commandWhitelist,
             boolean onboardTeleport) {
         this.serverName = serverName;
         this.onboardGamemode = onboardGamemode;
@@ -79,6 +81,7 @@ public final class ConfigData {
         this.joinSequenceDuration = joinSequenceDuration;
         this.joinSequenceFadeIn = joinSequenceFadeIn;
         this.joinSequenceFadeOut = joinSequenceFadeOut;
+        this.commandWhitelist = commandWhitelist;
         this.onboardTeleport = onboardTeleport;
     }
 
@@ -135,4 +138,6 @@ public final class ConfigData {
     }
 
     public boolean isOnboardTeleport() { return onboardTeleport; }
+
+    public List<String> getCommandWhitelist() { return commandWhitelist; }
 }

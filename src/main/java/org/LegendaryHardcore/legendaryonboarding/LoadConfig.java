@@ -69,6 +69,12 @@ public class LoadConfig {
             List<TitleContent> promptAccept = loadTitleContents(config.getMapList("PROMPT_ACCEPT"));
             String promptChat = config.getString("PROMPT_CHAT", "");
 
+            // Commands whitelist that the commands don't consume
+            List<String> commandWhitelist = config.getStringList("COMMAND_WHITELIST")
+                    .stream()
+                    .map(String::toLowerCase)
+                    .toList();
+
             // Join sequence
             List<TitleContent> joinContent = loadTitleContents(config.getMapList("JOIN_SEQUENCE_CONTENT"));
             int joinDuration = nonNegative(config.getInt("JOIN_SEQUENCE_DURATION", 3));
@@ -89,6 +95,7 @@ public class LoadConfig {
                     joinDuration,
                     joinSequenceFadeIn,
                     joinSequenceFadeOut,
+                    commandWhitelist,
                     onboardTeleport
             );
 

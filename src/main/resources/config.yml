@@ -46,3 +46,12 @@ JOIN_SEQUENCE_CONTENT:
 JOIN_SEQUENCE_FADE_IN: 1
 JOIN_SEQUENCE_DURATION: 3
 JOIN_SEQUENCE_FADE_OUT: 1
+
+# Commands allowed before the player accepts the rules
+# User lowercase, no leading slash
+# Namespaced commands are allowed (e.g. minecraft:help)
+COMMAND_WHITELIST:
+  - accept
+  - help
+  - rules
+  - discord

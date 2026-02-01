@@ -6,19 +6,11 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 
-import java.util.Locale;
-import java.util.Set;
 import java.util.UUID;
+import java.util.List;
 
 public class PlayerCommandBlocker implements Listener {
     private final LegendaryOnboarding plugin;
-
-    // Allowlist: keep it small and explicit
-    private static final Set<String> ALLOW = Set.of(
-            "/accept",
-            "/rules",
-            "/help"
-    );
 
     public PlayerCommandBlocker(LegendaryOnboarding plugin) {
         this.plugin = plugin;
@@ -28,14 +20,28 @@ public class PlayerCommandBlocker implements Listener {
     public void onCommand(PlayerCommandPreprocessEvent event) {
         UUID uuid = event.getPlayer().getUniqueId();
 
+        // Already accepted? No restrictions.
         if (plugin.getAcceptedStore().isAccepted(uuid)) return;
 
-        String msg = event.getMessage().trim();
-        String base = msg.split("\\s+")[0].toLowerCase(Locale.ROOT);
+        // Normalize command
+        String message = event.getMessage().toLowerCase().trim();
+        if (!message.startsWith("/")) return;
 
-        if (ALLOW.contains(base)) return;
+        String command = message.substring(1).split(" ")[0];
 
+        // Strip namespace if present (minecraft:help → help)
+        if (command.contains(":")) {
+            command = command.substring(command.indexOf(':') + 1);
+        }
+
+        List<String> whitelist = plugin.getConfigData().getCommandWhitelist();
+
+        if (whitelist.contains(command)) {
+            return; // allowed
+        }
+
+        // Block everything else
         event.setCancelled(true);
-        event.getPlayer().sendMessage("You must accept the rules first. Type /accept");
+        event.getPlayer().sendMessage("§cYou must accept the rules before using commands.");
     }
 }
