@@ -23,6 +23,12 @@ public class PlayerCommandBlocker implements Listener {
         // Already accepted? No restrictions.
         if (plugin.getAcceptedStore().isAccepted(uuid)) return;
 
+        // Only restrict if they're actively onboarding (or resuming via pending).
+        boolean onboardingActive =
+                plugin.canAcceptRules.containsKey(uuid) || plugin.getPendingStore().hasPending(uuid);
+
+        if (!onboardingActive) return;
+
         // Normalize command
         String message = event.getMessage().toLowerCase().trim();
         if (!message.startsWith("/")) return;
@@ -33,6 +39,9 @@ public class PlayerCommandBlocker implements Listener {
         if (command.contains(":")) {
             command = command.substring(command.indexOf(':') + 1);
         }
+
+        // Always allow accept (failsafe)
+        if (command.equals("accept")) return;
 
         List<String> whitelist = plugin.getConfigData().getCommandWhitelist();
 

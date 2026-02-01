@@ -26,22 +26,47 @@ public class PlayerJoin implements Listener {
         // Always record their latest name
         plugin.getAcceptedStore().recordSeenName(uuid, player.getName());
 
-        // If the player has already accepted, do nothing onboarding-related.
-        if (plugin.getAcceptedStore().isAccepted(uuid)) {
-            plugin.canAcceptRules.put(uuid, false);
+        final boolean accepted = plugin.getAcceptedStore().isAccepted(uuid);
+        final boolean hasPending = plugin.getPendingStore().hasPending(uuid);
+
+        // If accepted, ensure no stale onboarding state remains, then bail
+        if (accepted) {
+            plugin.canAcceptRules.remove(uuid);
+            plugin.acceptInProgress.remove(uuid);
+
+            var task = plugin.movementLocks.remove(uuid);
+            if (task != null) task.cancel();
+
+            // If they somehow still had pending from an old crash, clear it
+            if (hasPending) plugin.getPendingStore().clearPending(uuid);
+
             return;
         }
 
-        // Ensure command can't be used until rules sequence enables it
-        plugin.canAcceptRules.put(uuid, false);
+        // If they are NOT accepted but have pending, they disconnected mid-onboarding.
+        // Resume onboarding (do NOT allow skipping)
+        if (hasPending) {
+            plugin.canAcceptRules.put(uuid, false);
 
-        // Save the player's 'return to' location once (only if not already stored)
-        if (!plugin.getPendingStore().hasPending(uuid)) {
-            plugin.getPendingStore().setPending(uuid, player.getLocation());
+            player.getScheduler().run(plugin, task -> plugin.getRulesSequence().start(player), null);
+            return;
         }
 
-        player.getScheduler().run(plugin, task -> plugin.getRulesSequence().start(player),
-                null
-        );
+        // Do not grab players that have played before
+        if (player.hasPlayedBefore()) {
+            // Not accepted, no pending, returning player -> do nothing onboarding-related
+            plugin.canAcceptRules.remove(uuid);
+            plugin.acceptInProgress.remove(uuid);
+            return;
+        }
+
+        // Brand new player: start onboarding
+        plugin.canAcceptRules.put(uuid, false);
+
+        // Save their return location once
+        plugin.getPendingStore().setPending(uuid, player.getLocation());
+
+        // Start onboarding Sequence
+        player.getScheduler().run(plugin, task -> plugin.getRulesSequence().start(player), null);
     }
 }
