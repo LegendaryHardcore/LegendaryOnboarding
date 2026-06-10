@@ -1,9 +1,0 @@
-name: Onboard
-version: '1.0-SNAPSHOT'
-main: org.LegendaryHardcore.onboard.Onboard
-api-version: '1.21'
-
-commands:
-  accept:
-    description: Accept the server rules
-    usage: /accept

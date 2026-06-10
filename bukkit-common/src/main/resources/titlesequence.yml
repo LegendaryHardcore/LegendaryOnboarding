@@ -1,0 +1,180 @@
+# =============================================================================
+# LEGENDARY ONBOARDING - TITLE SEQUENCE
+# =============================================================================
+#
+# A sequence step may use any combination of:
+#   TITLE, SUBTITLE, CHAT, STOP_ALL_SOUNDS, SOUND, POTION_EFFECTS,
+#   REMOVE_POTION_EFFECTS,
+#   FADE_IN, DURATION, FADE_OUT
+#
+# Simple steps can stay on one line:
+#   - {TITLE: "Welcome", SUBTITLE: "Please read the rules"}
+#
+# Larger steps can use normal YAML formatting:
+#   - TITLE: "Server Rules"
+#     SUBTITLE: "A full copy is linked in chat"
+#     CHAT: "Read the rules: https://example.com/rules"
+#     DURATION: 8
+#
+# CHAT links:
+# - Any http:// or https:// address becomes clickable.
+# - The surrounding sentence remains normal chat text.
+# - Punctuation after a URL is not included in the link.
+# - Multiple URLs in one CHAT message are supported.
+#
+# Formatting:
+# - Colors: {black}, {dark_blue}, {dark_green}, {dark_aqua}, {dark_red},
+#   {dark_purple}, {gold}, {gray}, {dark_gray}, {blue}, {green}, {aqua},
+#   {red}, {light_purple}, {yellow}, {white}, or RGB such as {#55FFAA}.
+# - Styles: {bold}, {italic}, {underlined}, {strikethrough}, {obfuscated}.
+# - {standard} or {plain} clears styles but retains the current color.
+# - {reset} clears styles and returns to white.
+# - {newline} inserts a line break in chat. Titles, subtitles, and action bars
+#   render it as a space because Minecraft does not support multiline titles.
+# - Legacy Minecraft formatting codes are also supported.
+# - Welcome placeholders: {server_name} and {player_name}.
+
+# Keep onboarding disabled until the location and sequence are configured.
+ENABLED: false
+
+# Shown once per second until /accept becomes available.
+# Use {seconds} for the remaining whole seconds. Set to "" to disable.
+ACTIONBAR_COUNTDOWN: "{yellow}/accept unlocks in {gold}{seconds}{yellow}s"
+
+
+# =============================================================================
+# WELCOME SEQUENCE
+# =============================================================================
+#
+# This runs before RULES_SEQUENCE_CONTENT.
+# Available placeholders: {server_name}, {player_name}
+
+WELCOME_SEQUENCE:
+  - TITLE: "Welcome to {gold}{server_name}{reset}, {player_name}!"
+    STOP_ALL_SOUNDS: true
+    SOUND:
+      NAME: "minecraft:block.note_block.pling"
+      CATEGORY: "master"
+      VOLUME: 1.0
+      PITCH: 1.0
+    POTION_EFFECTS:
+      - TYPE: "minecraft:blindness"
+        DURATION: -1
+        AMPLIFIER: 0
+        AMBIENT: false
+        PARTICLES: false
+        ICON: false
+    FADE_IN: 1
+    DURATION: 3
+    FADE_OUT: 1
+
+
+# =============================================================================
+# RULES SEQUENCE
+# =============================================================================
+#
+# These defaults apply when a rules step omits its own timing value.
+
+RULES_SEQUENCE_FADE_IN: 1
+RULES_SEQUENCE_DURATION: 5
+RULES_SEQUENCE_FADE_OUT: 1
+
+RULES_SEQUENCE_CONTENT:
+  # Title and subtitle
+  - {TITLE: "{gold}{bold}Rules", SUBTITLE: "Please take a moment to read"}
+
+  # Subtitle only
+  - {SUBTITLE: "{yellow}Be respectful and use common sense"}
+
+  # Title, subtitle, and an embedded clickable link in chat
+  - TITLE: "{aqua}Full Rulebook"
+    SUBTITLE: "Open the link posted in chat"
+    CHAT: "{yellow}Read the complete rules here: {aqua}https://example.com/rules"
+    DURATION: 7
+
+  # Chat only. The sentence is normal text; only the URL is clickable.
+  - {CHAT: "{gray}Join our community: {light_purple}https://discord.gg/example"}
+
+
+# =============================================================================
+# ACCEPTANCE PROMPT
+# =============================================================================
+#
+# These steps appear after the rules sequence and remain until /accept is used.
+
+PROMPT_ACCEPT:
+  - TITLE: ""
+    SUBTITLE: "Type {green}{bold}/accept{reset} to proceed"
+    CHAT: "{gray}Questions? Visit {aqua}https://example.com/help{gray} or ask a staff member."
+
+
+# =============================================================================
+# POST-ACCEPTANCE SEQUENCE
+# =============================================================================
+#
+# These defaults apply when a post-acceptance step omits its own timing value.
+
+JOIN_SEQUENCE_FADE_IN: 1
+JOIN_SEQUENCE_DURATION: 3
+JOIN_SEQUENCE_FADE_OUT: 1
+
+JOIN_SEQUENCE_CONTENT:
+  # Title only
+  - TITLE: "{green}{bold}Welcome!"
+    STOP_ALL_SOUNDS: true
+    REMOVE_POTION_EFFECTS:
+      - "minecraft:blindness"
+
+  # Subtitle with custom timing
+  - {SUBTITLE: "Returning you to where you joined", FADE_IN: 0, DURATION: 4}
+
+  # Combined title, subtitle, and chat
+  - TITLE: "{gold}One More Thing"
+    SUBTITLE: "Useful links have been posted in chat"
+    CHAT: "{yellow}Website: {aqua}https://example.com {yellow}| Map: {aqua}https://map.example.com"
+    FADE_IN: 1
+    DURATION: 5
+    FADE_OUT: 1
+
+
+# =============================================================================
+# COPY-AND-PASTE EXAMPLES
+# =============================================================================
+#
+# Keep the leading # characters while these are examples. Remove them after
+# copying a step into one of the sequence lists above.
+#
+# Embedded link in a sentence:
+#   - {CHAT: "{yellow}Follow this link for all rules: {aqua}https://example.com/rules"}
+#
+# Link followed by punctuation:
+#   - {CHAT: "Our website is https://example.com. Click it to open the page."}
+#
+# Multiple clickable links:
+#   - {CHAT: "Rules: https://example.com/rules | Discord: https://discord.gg/example"}
+#
+# Title, subtitle, chat, and fully custom timing:
+#   - TITLE: "{red}{bold}Important"
+#     SUBTITLE: "Please review this before continuing"
+#     CHAT: "{yellow}Details: {aqua}https://example.com/important"
+#     FADE_IN: 2
+#     DURATION: 10
+#     FADE_OUT: 2
+#
+# Sound and potion effects:
+#   - TITLE: "{aqua}Listen Up"
+#     STOP_ALL_SOUNDS: true
+#     SOUND:
+#       NAME: "minecraft:entity.experience_orb.pickup"
+#       CATEGORY: "master"
+#       VOLUME: 1.0
+#       PITCH: 1.2
+#     POTION_EFFECTS:
+#       - TYPE: "minecraft:night_vision"
+#         DURATION: 10
+#         AMPLIFIER: 0
+#         AMBIENT: false
+#         PARTICLES: false
+#         ICON: true
+#     REMOVE_POTION_EFFECTS:
+#       - "minecraft:blindness"

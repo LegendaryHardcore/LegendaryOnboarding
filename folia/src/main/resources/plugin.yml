@@ -1,0 +1,23 @@
+name: ${name}
+version: ${version}
+main: org.LegendaryHardcore.legendaryonboarding.folia.FoliaLegendaryOnboarding
+api-version: '1.21'
+folia-supported: true
+authors: [Natonite, Thowan]
+
+commands:
+  accept:
+    description: Accept the server rules
+    usage: /accept
+    permission: legendaryonboarding.accept
+  legendaryonboarding:
+    description: Manage LegendaryOnboarding
+    usage: /legendaryonboarding reload
+    aliases: [lo]
+    permission: legendaryonboarding.reload
+
+permissions:
+  legendaryonboarding.accept:
+    default: true
+  legendaryonboarding.reload:
+    default: op

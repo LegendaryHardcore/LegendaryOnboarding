@@ -1,0 +1,33 @@
+# Available as {server_name} in titlesequence.yml.
+SERVER_NAME: "Example Server"
+
+# Player game mode during onboarding: survival, creative, spectator, or adventure
+# Spectator mode does not display the blindness fog.
+ONBOARD_GAMEMODE: "adventure"
+
+# If false, onboarding runs where the player first joins.
+ONBOARD_TELEPORT: false
+
+# Testing only: enable onboarding and force every player through it when they join.
+# Existing acceptance records are preserved and normal behavior resumes when disabled.
+DEBUG_FORCE_ONBOARDING: false
+
+# Prevent advancement criteria from being granted during onboarding.
+# This avoids location-based advancements when using a dedicated intro world.
+BLOCK_ADVANCEMENTS: true
+
+# Optional dedicated onboarding location
+POS_WORLD: "world"
+POS_X: 0
+POS_Y: 120
+POS_Z: 0
+POS_YAW: 0
+POS_PITCH: 0
+
+# Commands allowed before the player accepts the rules.
+# Use lowercase names without a leading slash.
+COMMAND_WHITELIST:
+  - accept
+  - help
+  - rules
+  - discord
