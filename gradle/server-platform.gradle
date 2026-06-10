@@ -1,0 +1,43 @@
+apply plugin: "java"
+apply plugin: "com.gradleup.shadow"
+
+dependencies {
+    implementation project(":bukkit-common")
+}
+
+tasks {
+    jar {
+        enabled = false
+    }
+
+    build {
+        dependsOn(shadowJar)
+    }
+
+    shadowJar {
+        dependsOn(project(":bukkit-common").tasks.named("classes"))
+        from(project(":bukkit-common").sourceSets.main.output)
+
+        archiveClassifier.set("")
+        archiveBaseName.set(platformJarName)
+        archiveVersion.set(project.version.toString())
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+        dependencies {
+            exclude(dependency("dev.folia:folia-api:.*"))
+            exclude(dependency("io.papermc.paper:paper-api:.*"))
+        }
+    }
+}
+
+processResources {
+    def props = [
+            version: project.version.toString(),
+            name: "LegendaryOnboarding"
+    ]
+    inputs.properties(props)
+    filteringCharset "UTF-8"
+    filesMatching("plugin.yml") {
+        expand(props)
+    }
+}

@@ -1,0 +1,145 @@
+package org.LegendaryHardcore.legendaryonboarding;
+
+import org.bukkit.Location;
+import org.bukkit.SoundCategory;
+import org.bukkit.World;
+import java.util.List;
+
+/*
+ *  Class for data loaded from config
+ */
+public final class ConfigData {
+    private final boolean titleSequenceEnabled;
+    private final String serverName;
+    private final String onboardGamemode;
+    private final PlayerLocation onboardLocation;
+    private final String actionBarCountdown;
+    private final List<TitleContent> welcomeSequenceContent;
+    private final List<TitleContent> rulesSequenceContent;
+    private final List<TitleContent> promptAccept;
+    private final List<TitleContent> joinSequenceContent;
+    private final boolean onboardTeleport;
+    private final boolean debugForceOnboarding;
+    private final boolean blockAdvancements;
+    private final List<String> commandWhitelist;
+
+    // One independently timed sequence step. Empty title/subtitle/chat values are ignored.
+    public record TitleContent(
+            String title,
+            String subtitle,
+            String chat,
+            int fadeIn,
+            int duration,
+            int fadeOut,
+            boolean stopAllSounds,
+            SoundEffect sound,
+            List<PotionEffectConfig> potionEffects,
+            List<String> removePotionEffects
+    ) {}
+
+    public record SoundEffect(String name, SoundCategory category, float volume, float pitch) {}
+
+    public record PotionEffectConfig(
+            String type,
+            int duration,
+            int amplifier,
+            boolean ambient,
+            boolean particles,
+            boolean icon
+    ) {}
+
+    // Location
+    public record PlayerLocation(
+            String worldName,
+            double x,
+            double y,
+            double z,
+            float yaw,
+            float pitch
+    ) {
+
+        /*
+         *  Try to convert PlayerLocation to a Bukkit Location
+         *  @return A Bukkit Location object, or null if the world is not found
+         */
+        public Location toLocation(World fallback) {
+            World world = org.bukkit.Bukkit.getWorld(worldName);
+            if (world == null) world = fallback;
+            if (world == null) return null;
+            return new Location(world, x, y, z, yaw, pitch);
+        }
+    }
+
+    public ConfigData(
+            boolean titleSequenceEnabled,
+            String serverName,
+            String onboardGamemode,
+            PlayerLocation onboardLocation,
+            String actionBarCountdown,
+            List<TitleContent> welcomeSequenceContent,
+            List<TitleContent> rulesSequenceContent,
+            List<TitleContent> promptAccept,
+            List<TitleContent> joinSequenceContent,
+            List<String> commandWhitelist,
+            boolean onboardTeleport,
+            boolean debugForceOnboarding,
+            boolean blockAdvancements) {
+        this.titleSequenceEnabled = titleSequenceEnabled;
+        this.serverName = serverName;
+        this.onboardGamemode = onboardGamemode;
+        this.onboardLocation = onboardLocation;
+        this.actionBarCountdown = actionBarCountdown;
+        this.welcomeSequenceContent = welcomeSequenceContent;
+        this.rulesSequenceContent = rulesSequenceContent;
+        this.promptAccept = promptAccept;
+        this.joinSequenceContent = joinSequenceContent;
+        this.commandWhitelist = commandWhitelist;
+        this.onboardTeleport = onboardTeleport;
+        this.debugForceOnboarding = debugForceOnboarding;
+        this.blockAdvancements = blockAdvancements;
+    }
+
+    public boolean isTitleSequenceEnabled() {
+        return titleSequenceEnabled;
+    }
+
+    public String getServerName() {
+        return serverName;
+    }
+
+    public String getOnboardGamemode() {
+        return onboardGamemode;
+    }
+
+    public PlayerLocation getOnboardLocation() {
+        return onboardLocation;
+    }
+
+    public String getActionBarCountdown() {
+        return actionBarCountdown;
+    }
+
+    public List<TitleContent> getWelcomeSequenceContent() {
+        return welcomeSequenceContent;
+    }
+
+    public List<TitleContent> getRulesSequenceContent() {
+        return rulesSequenceContent;
+    }
+
+    public List<TitleContent> getPromptAccept() {
+        return promptAccept;
+    }
+
+    public List<TitleContent> getJoinSequenceContent() {
+        return joinSequenceContent;
+    }
+
+    public boolean isOnboardTeleport() { return onboardTeleport; }
+
+    public boolean isDebugForceOnboarding() { return debugForceOnboarding; }
+
+    public boolean isBlockAdvancements() { return blockAdvancements; }
+
+    public List<String> getCommandWhitelist() { return commandWhitelist; }
+}

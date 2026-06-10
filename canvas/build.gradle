@@ -1,0 +1,10 @@
+plugins {
+    id "com.gradleup.shadow" version "8.3.9"
+}
+
+ext.platformJarName = "LegendaryOnboarding-Canvas"
+apply from: rootProject.file("gradle/server-platform.gradle")
+
+dependencies {
+    compileOnly("dev.folia:folia-api:1.21.11-R0.1-SNAPSHOT")
+}
