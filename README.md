@@ -37,8 +37,14 @@ Players who have played on the server before are not automatically onboarded unl
 Until onboarding is complete:
 
 - All player damage, including void damage, is cancelled.
+- Players who attempt to damage an onboarding player receive a configurable notice.
 - Advancement criteria are blocked by default.
 - Chat messages are blocked.
+- Native chat, broadcasts, and standard join, quit, and advancement
+  announcements can be hidden from onboarding players.
+- Onboarding players can be hidden from other players' tab lists.
+- World interaction is blocked, including outgoing damage, block changes,
+  inventories, item use/drop/pickup, entity interaction, and mob targeting.
 - Commands are blocked unless they are listed in `COMMAND_WHITELIST`.
 - `/accept` is always permitted by the command blocker, but it only succeeds after the rules sequence has finished.
 - Repeated `/accept` attempts are guarded so the completion sequence cannot run more than once at a time.
@@ -56,11 +62,12 @@ After the player runs `/accept`, the plugin:
 7. Grants five seconds of temporary invulnerability and resistance.
 8. Permanently records the player's acceptance.
 
-The safe-location check requires passable feet and head blocks, solid ground, and avoids common hazards such as lava, fire, magma blocks, campfires, cactus, and powder snow. If the saved location or world is unavailable, the world spawn is used as a fallback.
+The safe-location check requires dry, passable feet and head blocks, solid ground, and avoids common hazards such as water, bubble columns, lava, fire, magma blocks, campfires, cactus, and powder snow. For each return or randomized fallback area, the plugin selects an exposed world surface and never descends through terrain to an otherwise-safe cave or ocean floor. Grass, dirt-family, moss, mud, and leaves are preferred, while safe biome surfaces such as snow, stone, sand, gravel, and ice remain valid when no preferred surface is nearby. Ground within eight blocks of the world build ceiling is rejected. Return resolution then tries the saved location, the optional cleanup fallback, the current world spawn, and finally the primary world spawn.
 
 ### Disconnect and restart recovery
 
-- A player who disconnects before completing onboarding retains their saved return location and resumes onboarding when they reconnect.
+- A player who disconnects or is kicked during onboarding has transient onboarding state cleared immediately. The plugin synchronously returns them to their exact saved location and immediately saves their player data so that location remains safe even while the plugin is disabled. If the platform rejects the synchronous return during a disconnect, an asynchronous attempt is made and the pending record remains available for recovery.
+- During plugin or server shutdown, online onboarding players receive the same immediate state cleanup, synchronous exact return, and player-data save. Their unfinished pending session remains resumable, so re-enabling the plugin places them back into onboarding rather than treating shutdown as an intentional end request.
 - Accepted players bypass onboarding on future joins.
 - Stale pending data is cleared when an accepted player joins.
 - Acceptance and pending-location data are saved asynchronously and flushed when the plugin disables.
@@ -70,15 +77,24 @@ The safe-location check requires passable feet and head blocks, solid ground, an
 | Command | Description | Permission |
 | --- | --- | --- |
 | `/accept` | Accepts the server rules after the rules sequence finishes | `legendaryonboarding.accept` |
+| `/legendaryonboarding help` (`/lo help`) | Lists the commands available to the sender | None |
 | `/legendaryonboarding reload` (`/lo reload`) | Reloads both configuration files | `legendaryonboarding.reload` |
+| `/lo status <playername \| UUID>` | Shows acceptance, pending, and active onboarding state | `legendaryonboarding.status` |
+| `/lo debug start <playername \| UUID>` | Forces an online player into onboarding without a first-join announcement | `legendaryonboarding.debug` |
+| `/lo debug end <playername \| UUID>` | Releases a player and clears all potion effects plus transient onboarding state | `legendaryonboarding.debug` |
+| `/lo debug isAccepted <playername \| UUID> <true \| false \| remove>` | Changes or removes a stored acceptance entry | `legendaryonboarding.debug` |
 
-The accept permission defaults to all players. The reload permission defaults to server operators.
+The accept permission defaults to all players. All management permissions default to server operators.
+Running `/lo` without arguments also opens the permission-filtered help list.
 
 ## Configuration
 
 Configuration is split by purpose:
 
 - `config.yml` controls the onboarding location, game mode, server name, and command whitelist.
+- `EVENT_PRIORITIES` controls when chat cancellation and onboarding join/quit
+  message suppression run relative to other plugins. Changing these values with
+  `/lo reload` unregisters and rebuilds the affected listeners.
 - `titlesequence.yml` contains the rules, acceptance prompt, post-acceptance sequence, chat messages, formatting, and timing.
 
 On startup, both files are updated to their bundled layouts while preserving supported values, adding new defaults, and removing obsolete settings. When upgrading from the older single-file layout, sequence settings are migrated from `config.yml` into `titlesequence.yml` before obsolete keys are removed.
@@ -89,8 +105,19 @@ On startup, both files are updated to their bundled layouts while preserving sup
 | `ONBOARD_GAMEMODE` | Onboarding game mode: `survival`, `creative`, `spectator`, or `adventure` |
 | `ONBOARD_TELEPORT` | Whether to move the player to the configured onboarding location |
 | `DEBUG_FORCE_ONBOARDING` | Testing mode that enables onboarding and forces every joining player through it without deleting acceptance records |
+| `ONBOARD_UNACCEPTED_RETURNING_PLAYERS` | Onboards returning players whose acceptance state is false or missing; defaults to `false` |
 | `BLOCK_ADVANCEMENTS` | Prevents advancement criteria from being granted during onboarding; defaults to `true` |
-| `POS_WORLD` | Onboarding world; required only when onboarding and teleporting are enabled |
+| `BLOCK_EXTERNAL_MESSAGES_DURING_ONBOARDING` | Hides native chat, broadcasts, and standard server announcements from onboarding players |
+| `HIDE_ONBOARDING_PLAYERS_FROM_TAB` | Removes onboarding players from other players' tab lists without hiding their in-world entity |
+| `ONBOARDING_DAMAGE_MESSAGE` | Message sent to someone who attacks an onboarding player; supports `{player}` |
+| `FIRST_JOIN_MESSAGE` | Announcement sent after normal onboarding completes; supports `{player}` |
+| `CLEANUP_FALLBACK_ENABLED` | Enables the configured recovery location when a saved destination is missing or unsafe |
+| `CLEANUP_FALLBACK_WORLD`, `CLEANUP_FALLBACK_X/Y/Z`, `CLEANUP_FALLBACK_YAW/PITCH` | Optional recovery destination |
+| `CLEANUP_FALLBACK_WORLD_TYPE` | Loaded world environment used when the named cleanup world is unavailable: `NORMAL`, `NETHER`, or `THE_END` |
+| `CLEANUP_FALLBACK_RADIUS` | Randomizes fallback X and Z from `-radius` through `+radius` around the configured coordinates; defaults to `5000`, or use `0` for a fixed fallback |
+| `RETURN_DESIRED_Y` | Preferred height used near the saved X/Z and world-spawn fallbacks; defaults to `64` |
+| `POS_WORLD` | Preferred onboarding world name |
+| `POS_WORLD_TYPE` | Loaded world environment used when `POS_WORLD` is unavailable: `NORMAL`, `NETHER`, or `THE_END` |
 | `POS_X`, `POS_Y`, `POS_Z` | Onboarding coordinates |
 | `POS_YAW`, `POS_PITCH` | Onboarding view direction |
 | `COMMAND_WHITELIST` | Commands allowed during onboarding, lowercase and without `/` |
@@ -105,6 +132,47 @@ For testing on an established server, set `DEBUG_FORCE_ONBOARDING: true`, run
 `/lo reload`, then reconnect. Debug mode temporarily activates the title sequence
 even when `ENABLED` is `false` in `titlesequence.yml`.
 Set the debug option back to `false` and reload when testing is complete.
+
+For narrower testing, keep `DEBUG_FORCE_ONBOARDING` disabled and use
+`/lo debug start <player>`. Use `/lo debug end <player>` to restore the player
+without accepting the rules or sending the first-join announcement.
+
+Forced cleanup through `debug end`, disabling the sequence, or reconnecting with
+the sequence disabled removes every active potion effect. It also clears titles,
+action bars, sounds, invisibility, invulnerability, flight, glowing, fire,
+freezing, velocity, movement locks, and tab-list hiding. Normal successful
+completion removes only potion effects tracked as part of the sequence.
+
+When `debug end` targets an offline player, `pending.yml` stores a
+`cleanupRequired` marker and retains any saved return location. The full cleanup
+runs on their next login, and the pending entry is removed only after the return
+teleport succeeds. Ordinary plugin/server shutdown does not set this marker:
+unfinished sessions remain resumable. Pending records also persist whether a
+session was debug-forced and whether completion should emit the first-join
+announcement.
+
+Return resolution first checks the player's saved X/Z around `RETURN_DESIRED_Y`.
+This avoids returning someone to build height merely because they originally
+joined there. The original saved Y remains a later fallback. World-spawn searches
+use the same preferred height and only select safe ground with enough room.
+When the configured cleanup fallback is reached, the plugin samples safe columns
+inside `CLEANUP_FALLBACK_RADIUS` around its configured X/Z coordinates. X and Z
+are randomized independently, giving a square range such as `-5000` through
+`+5000` on each axis with the default value. The configured fallback world is
+preferred, its configured world type is used when that name is unavailable,
+and unsafe sampled columns are skipped.
+
+World destinations resolve the configured world name first. If that world is
+not loaded, the plugin selects the first loaded world matching the configured
+world type. Cleanup spawn fallbacks are restricted to
+`CLEANUP_FALLBACK_WORLD_TYPE`, so an invalid overworld fallback cannot silently
+release a player into the End onboarding world.
+
+Message filtering uses the events exposed by Bukkit and Paper. It covers native
+chat, broadcasts, and standard join, quit, and advancement announcements. Death
+events are left unchanged so integrations such as DiscordSRV can consume and
+forward their messages. Messages sent directly to a player by another plugin
+cannot be intercepted without a packet-level dependency.
 
 ### Sequence Steps
 
@@ -202,6 +270,7 @@ The plugin creates these files in `plugins/LegendaryOnboarding/`:
 - `titlesequence.yml`: the complete player-facing onboarding sequence and its timing defaults.
 - `accepted.yml`: accepted UUIDs, up to ten recently seen player names, and the first acceptance timestamp.
 - `pending.yml`: saved return locations for players with unfinished onboarding.
+- `recovery/playerdata/`: durable pre-onboarding player data used to recover interrupted sessions.
 
 ## Building
 
@@ -221,9 +290,28 @@ The top-level build compiles and tests the shared code, builds all three platfor
 
 ```text
 dist/
-  LegendaryOnboarding-Paper-1.1.1.jar
-  LegendaryOnboarding-Folia-1.1.1.jar
-  LegendaryOnboarding-Canvas-1.1.1.jar
+  LegendaryOnboarding-Paper-1.1.3-b7.jar
+  LegendaryOnboarding-Folia-1.1.3-b7.jar
+  LegendaryOnboarding-Canvas-1.1.3-b7.jar
 ```
 
-The project version is defined in the root `build.gradle` and expanded into each platform's `plugin.yml` during resource processing.
+The release version is defined in the root `build.gradle`. Packaging with
+`build`, `collectPlatformJars`, or a platform `shadowJar` increments
+`build-number.txt` once for that Gradle invocation. The resulting version, such
+as `1.1.3-b7`, is expanded into each platform's `plugin.yml`, shown by the
+server's plugin/version commands and startup log, and included in the jar name.
+Test-only Gradle runs do not consume a build number.
+
+## Testing
+
+Run the automated suite and build all platform artifacts with:
+
+```powershell
+.\gradlew.bat clean test collectPlatformJars
+```
+
+The manual release checklist is in
+[`docs/UAT-1.1.3.md`](docs/UAT-1.1.3.md). It covers first join, debug modes,
+message and interaction isolation, damage protection, reload/disable cleanup,
+offline recovery, admin commands, persistence, desired-Y return behavior, and
+Paper/Folia/Canvas smoke testing.

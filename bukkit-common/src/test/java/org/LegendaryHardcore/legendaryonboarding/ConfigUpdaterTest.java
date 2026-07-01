@@ -101,6 +101,39 @@ class ConfigUpdaterTest {
         assertTrue(result.removedPaths().isEmpty());
     }
 
+    @Test
+    void updatesFormerFirstJoinDefaultButPreservesCustomMessages() throws Exception {
+        File formerDefault = writeLiveConfig("""
+                FIRST_JOIN_MESSAGE: "{yellow}{player} has joined for the first time."
+                """);
+
+        update(formerDefault, """
+                FIRST_JOIN_MESSAGE: "{yellow}{player} joined the server for the first time"
+                """);
+
+        assertEquals(
+                "{yellow}{player} joined the server for the first time",
+                YamlConfiguration.loadConfiguration(formerDefault)
+                        .getString("FIRST_JOIN_MESSAGE")
+        );
+
+        File custom = temporaryDirectory.resolve("custom.yml").toFile();
+        Files.writeString(
+                custom.toPath(),
+                "FIRST_JOIN_MESSAGE: \"Welcome {player}!\"\n",
+                StandardCharsets.UTF_8
+        );
+        update(custom, """
+                FIRST_JOIN_MESSAGE: "{yellow}{player} joined the server for the first time"
+                """);
+
+        assertEquals(
+                "Welcome {player}!",
+                YamlConfiguration.loadConfiguration(custom)
+                        .getString("FIRST_JOIN_MESSAGE")
+        );
+    }
+
     private File writeLiveConfig(String yaml) throws Exception {
         Path path = temporaryDirectory.resolve("config.yml");
         Files.writeString(path, yaml, StandardCharsets.UTF_8);

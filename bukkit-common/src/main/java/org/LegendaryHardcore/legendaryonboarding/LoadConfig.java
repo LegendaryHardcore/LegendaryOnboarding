@@ -7,6 +7,7 @@ import org.bukkit.SoundCategory;
 import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.event.EventPriority;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,20 +54,65 @@ public class LoadConfig {
 
             // Location used only when teleporting to a dedicated onboarding area.
             String worldName = config.getString("POS_WORLD", "world");
+            World.Environment onboardWorldEnvironment = parseWorldEnvironment(
+                    config.getString("POS_WORLD_TYPE", "NORMAL")
+            );
 
             // Are we teleporting the player?
             boolean onboardTeleport = config.getBoolean("ONBOARD_TELEPORT", false);
             boolean blockAdvancements = config.getBoolean("BLOCK_ADVANCEMENTS", true);
-
-            // The configured world is only required when an enabled sequence teleports players.
-            if (requiresOnboardingWorld(titleSequenceEnabled, onboardTeleport)) {
-                World world = Bukkit.getWorld(worldName);
-                if (world == null) {
-                    plugin.getLogger().severe("[LegendaryOnboarding] World " + worldName + " not found!");
-                    return null;
-                }
-            }
-
+            boolean onboardUnacceptedReturningPlayers =
+                    config.getBoolean("ONBOARD_UNACCEPTED_RETURNING_PLAYERS", false);
+            boolean blockExternalMessages =
+                    config.getBoolean("BLOCK_EXTERNAL_MESSAGES_DURING_ONBOARDING", true);
+            boolean hideOnboardingPlayersFromTab =
+                    config.getBoolean("HIDE_ONBOARDING_PLAYERS_FROM_TAB", true);
+            boolean cleanupFallbackEnabled =
+                    config.getBoolean("CLEANUP_FALLBACK_ENABLED", false);
+            World.Environment cleanupFallbackEnvironment = parseWorldEnvironment(
+                    config.getString("CLEANUP_FALLBACK_WORLD_TYPE", "NORMAL")
+            );
+            PlayerLocation cleanupFallbackLocation = cleanupFallbackEnabled
+                    ? new PlayerLocation(
+                    config.getString("CLEANUP_FALLBACK_WORLD", "world"),
+                    config.getDouble("CLEANUP_FALLBACK_X", 0.0),
+                    config.getDouble("CLEANUP_FALLBACK_Y", 64.0),
+                    config.getDouble("CLEANUP_FALLBACK_Z", 0.0),
+                    (float) config.getDouble("CLEANUP_FALLBACK_YAW", 0.0),
+                    (float) config.getDouble("CLEANUP_FALLBACK_PITCH", 0.0),
+                    cleanupFallbackEnvironment
+            )
+                    : null;
+            int cleanupFallbackRadius = boundedFallbackRadius(
+                    config.getInt("CLEANUP_FALLBACK_RADIUS", 5000)
+            );
+            int returnDesiredY =
+                    config.getInt("RETURN_DESIRED_Y", 64);
+            String onboardingDamageMessage = config.getString(
+                    "ONBOARDING_DAMAGE_MESSAGE",
+                    "{yellow}{player} is currently onboarding."
+            );
+            String firstJoinMessage = config.getString(
+                    "FIRST_JOIN_MESSAGE",
+                    "{yellow}{player} joined the server for the first time"
+            );
+            ConfigData.EventPriorities eventPriorities = new ConfigData.EventPriorities(
+                    parseEventPriority(
+                            config.getString("EVENT_PRIORITIES.CHAT_CONSUMPTION"),
+                            EventPriority.MONITOR,
+                            "EVENT_PRIORITIES.CHAT_CONSUMPTION"
+                    ),
+                    parseEventPriority(
+                            config.getString("EVENT_PRIORITIES.JOIN_MESSAGE"),
+                            EventPriority.HIGHEST,
+                            "EVENT_PRIORITIES.JOIN_MESSAGE"
+                    ),
+                    parseEventPriority(
+                            config.getString("EVENT_PRIORITIES.QUIT_MESSAGE"),
+                            EventPriority.HIGHEST,
+                            "EVENT_PRIORITIES.QUIT_MESSAGE"
+                    )
+            );
 
             PlayerLocation onboardLocation = new PlayerLocation(
                     worldName,
@@ -74,8 +120,21 @@ public class LoadConfig {
                     config.getDouble("POS_Y", 120.0),
                     config.getDouble("POS_Z", 0.0),
                     (float) config.getDouble("POS_YAW", 0.0),
-                    (float) config.getDouble("POS_PITCH", 0.0)
+                    (float) config.getDouble("POS_PITCH", 0.0),
+                    onboardWorldEnvironment
             );
+
+            // Teleporting requires either the named world or a loaded world of
+            // the configured environment type.
+            if (requiresOnboardingWorld(titleSequenceEnabled, onboardTeleport)
+                    && onboardLocation.toLocation() == null) {
+                plugin.getLogger().severe(
+                        "[LegendaryOnboarding] World " + worldName
+                                + " not found and no loaded "
+                                + onboardWorldEnvironment + " world is available!"
+                );
+                return null;
+            }
 
             String actionBarCountdown = titleSequence.getString(
                     "ACTIONBAR_COUNTDOWN",
@@ -136,7 +195,17 @@ public class LoadConfig {
                     commandWhitelist,
                     onboardTeleport,
                     debugForceOnboarding,
-                    blockAdvancements
+                    blockAdvancements,
+                    onboardUnacceptedReturningPlayers,
+                    blockExternalMessages,
+                    hideOnboardingPlayersFromTab,
+                    cleanupFallbackLocation,
+                    cleanupFallbackEnvironment,
+                    cleanupFallbackRadius,
+                    returnDesiredY,
+                    onboardingDamageMessage,
+                    firstJoinMessage,
+                    eventPriorities
             );
 
         } catch (Exception e) {
@@ -149,12 +218,50 @@ public class LoadConfig {
         return Math.max(0, value);
     }
 
+    static int boundedFallbackRadius(int value) {
+        return Math.min(30_000_000, nonNegative(value));
+    }
+
+    static World.Environment parseWorldEnvironment(String value) {
+        if (value == null) return World.Environment.NORMAL;
+        return switch (value.trim().toUpperCase(java.util.Locale.ROOT)) {
+            case "NETHER" -> World.Environment.NETHER;
+            case "END", "THE_END" -> World.Environment.THE_END;
+            default -> World.Environment.NORMAL;
+        };
+    }
+
     static boolean requiresOnboardingWorld(boolean titleSequenceEnabled, boolean onboardTeleport) {
         return titleSequenceEnabled && onboardTeleport;
     }
 
     static boolean isSequenceActive(boolean configuredSequenceEnabled, boolean debugForceOnboarding) {
         return configuredSequenceEnabled || debugForceOnboarding;
+    }
+
+    private EventPriority parseEventPriority(
+            String value,
+            EventPriority fallback,
+            String path
+    ) {
+        EventPriority parsed = parseEventPriority(value);
+        if (parsed != null) return parsed;
+        plugin.getLogger().warning(
+                path + " must be LOWEST, LOW, NORMAL, HIGH, HIGHEST, or MONITOR; using "
+                        + fallback + "."
+        );
+        return fallback;
+    }
+
+    static EventPriority parseEventPriority(String value) {
+        if (value == null) return null;
+        try {
+            return EventPriority.valueOf(
+                    value.trim().toUpperCase(java.util.Locale.ROOT)
+            );
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
     }
 
     /*

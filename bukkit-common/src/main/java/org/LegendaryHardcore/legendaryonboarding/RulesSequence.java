@@ -40,7 +40,14 @@ public class RulesSequence {
         // Determine where the intro should happen
         final Location anchor;
         if (plugin.getConfigData().isOnboardTeleport()) {
-            anchor = plugin.getConfigData().getOnboardLocation().toLocation(player.getWorld());
+            anchor = plugin.getConfigData().getOnboardLocation().toLocation();
+            if (anchor == null) {
+                plugin.getLogger().severe(
+                        "No loaded onboarding world matches POS_WORLD or POS_WORLD_TYPE."
+                );
+                plugin.endOnboarding(uuid);
+                return;
+            }
         } else {
             // "in place" intro: use where they are right now
             anchor = player.getLocation().clone();

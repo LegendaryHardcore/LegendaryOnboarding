@@ -86,6 +86,24 @@ public final class AcceptedStore {
         return e != null && e.accepted();
     }
 
+    public boolean hasEntry(UUID uuid) {
+        return accepted.containsKey(uuid);
+    }
+
+    public AcceptedEntry getEntry(UUID uuid) {
+        return accepted.get(uuid);
+    }
+
+    public UUID findByName(String name) {
+        if (name == null || name.isBlank()) return null;
+        for (Map.Entry<UUID, AcceptedEntry> entry : accepted.entrySet()) {
+            if (entry.getValue().names().stream().anyMatch(name::equalsIgnoreCase)) {
+                return entry.getKey();
+            }
+        }
+        return null;
+    }
+
     /** Update name list on join (works whether accepted or not). */
     public void recordSeenName(UUID uuid, String currentName) {
         if (currentName == null || currentName.isBlank()) return;
@@ -124,6 +142,24 @@ public final class AcceptedStore {
             }
 
             return new AcceptedEntry(updatedNames, true, first);
+        });
+    }
+
+    public void setAccepted(UUID uuid, String currentName, boolean value) {
+        accepted.compute(uuid, (id, existing) -> {
+            AcceptedEntry entry = existing == null
+                    ? new AcceptedEntry(new ArrayList<>(), false, null)
+                    : existing;
+            List<String> names = mergeName(entry.names(), currentName);
+            String firstAccepted = entry.firstAccepted();
+            if (value && (firstAccepted == null || firstAccepted.isBlank())) {
+                firstAccepted = Instant.now().toString();
+            }
+            AcceptedEntry updated = new AcceptedEntry(names, value, firstAccepted);
+            if (!updated.equals(entry)) {
+                markDirtyAndScheduleSave();
+            }
+            return updated;
         });
     }
 

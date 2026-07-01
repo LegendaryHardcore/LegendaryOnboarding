@@ -3,12 +3,9 @@ package org.LegendaryHardcore.legendaryonboarding;
 import org.LegendaryHardcore.legendaryonboarding.ConfigData.TitleContent;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
-import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.Material;
-import org.bukkit.block.Block;
 
 import java.util.List;
 import java.util.UUID;
@@ -81,41 +78,19 @@ public class JoinSequence {
                 return;
             }
 
-            var pending = plugin.getPendingStore().getPendingLocation(uuid);
-
-            if (pending == null || pending.getWorld() == null) {
-                pending = player.getWorld().getSpawnLocation();
-            }
-
             // Stop pinning the player before teleporting away from the onboarding location.
             plugin.stopMovementLock(uuid);
-            Location scanOrigin = pending;
-            plugin.getPlatformScheduler().runAtLocation(scanOrigin, () -> {
-                Location safe;
-                try {
-                    safe = makePhysicallySafe(scanOrigin);
-                } catch (RuntimeException exception) {
-                    plugin.getLogger().warning(
-                            "Could not scan the return location for " + player.getName()
-                                    + ": " + exception.getMessage()
-                    );
-                    safe = null;
-                }
-
-                Location finalSafe = safe;
-                plugin.getPlatformScheduler().runEntity(player, () -> {
-                    if (!player.isOnline()) {
-                        clearGuards(uuid);
-                        return;
+            plugin.resolveSafeReturnLocation(
+                    player,
+                    plugin.getPendingStore().getPendingLocation(uuid),
+                    target -> {
+                        if (target == null) {
+                            holdForReturnRecovery(player);
+                            return;
+                        }
+                        teleportAndRelease(player, target, true);
                     }
-
-                    Location target = finalSafe;
-                    if (target == null) {
-                        target = player.getWorld().getSpawnLocation().add(0.5, 0, 0.5);
-                    }
-                    teleportAndRelease(player, target, true);
-                });
-            });
+            );
         });
     }
 
@@ -142,19 +117,41 @@ public class JoinSequence {
                 }
 
                 if (allowSpawnFallback) {
-                    Location spawn = player.getWorld().getSpawnLocation().add(0.5, 0, 0.5);
-                    teleportAndRelease(player, spawn, false);
+                    plugin.resolveSafeReturnLocation(player, null, fallback -> {
+                        if (fallback == null) {
+                            holdForReturnRecovery(player);
+                        } else {
+                            teleportAndRelease(player, fallback, false);
+                        }
+                    });
                     return;
                 }
 
                 plugin.getLogger().warning(
                         "Spawn fallback teleport failed for " + player.getName()
-                                + "; releasing the player at their current location."
+                                + "; retaining onboarding state for recovery."
                 );
-                finishOnboarding(player);
+                holdForReturnRecovery(player);
             });
             return null;
         });
+    }
+
+    private void holdForReturnRecovery(Player player) {
+        UUID uuid = player.getUniqueId();
+        plugin.getLogger().warning(
+                "No safe return world/location could be found for "
+                        + player.getName()
+                        + "; retaining pending onboarding state instead of "
+                        + "releasing them at the onboarding location."
+        );
+        plugin.getPendingStore().markCleanupRequired(uuid);
+        plugin.joinSequenceActive.remove(uuid);
+        plugin.acceptInProgress.remove(uuid);
+        plugin.canAcceptRules.put(uuid, false);
+        player.setInvulnerable(true);
+        player.setFallDistance(0f);
+        plugin.startMovementLock(player, player.getLocation(), true);
     }
 
     private void finishOnboarding(Player player) {
@@ -167,110 +164,21 @@ public class JoinSequence {
             player.setFlying(false);
             player.setAllowFlight(false);
             player.setFallDistance(0f);
-            plugin.getPendingStore().clearPending(uuid);
-            plugin.getAcceptedStore().markAccepted(uuid, player.getName());
+            plugin.completeOnboarding(player);
             applySoftProtection(player, 5);
         } finally {
             clearGuards(uuid);
         }
     }
 
-    private Location makePhysicallySafe(Location base) {
-        if (base == null) return null;
-        World w = base.getWorld();
-        if (w == null) return null;
-
-        // Center on block
-        Location centered = base.clone();
-        centered.setX(centered.getBlockX() + 0.5);
-        centered.setZ(centered.getBlockZ() + 0.5);
-
-        if (isPhysicallySafe(centered)) return centered;
-
-        // Search nearby within a modest radius
-        return findNearbySafe(centered, 6, 4);
-    }
-
-    private boolean isPhysicallySafe(Location loc) {
-        World w = loc.getWorld();
-        if (w == null) return false;
-
-        int x = loc.getBlockX();
-        int y = loc.getBlockY();
-        int z = loc.getBlockZ();
-
-        // Avoid void / ceiling extremes
-        if (y <= w.getMinHeight() + 1) return false;
-        if (y >= w.getMaxHeight() - 2) return false;
-
-        Block feet = w.getBlockAt(x, y, z);
-        Block head = w.getBlockAt(x, y + 1, z);
-        Block below = w.getBlockAt(x, y - 1, z);
-
-        // Must have space
-        if (!feet.isPassable()) return false;
-        if (!head.isPassable()) return false;
-
-        // Must have ground
-        if (!below.getType().isSolid()) return false;
-
-        // Avoid standing in/over obvious hazards
-        Material feetType = feet.getType();
-        Material belowType = below.getType();
-
-        if (feetType == Material.LAVA || feetType == Material.FIRE || feetType == Material.SOUL_FIRE) return false;
-        if (belowType == Material.LAVA
-                || belowType == Material.MAGMA_BLOCK
-                || belowType == Material.CAMPFIRE
-                || belowType == Material.SOUL_CAMPFIRE
-                || belowType == Material.CACTUS
-                || belowType == Material.POWDER_SNOW) return false;
-
-        return true;
-    }
-
-    private Location findNearbySafe(Location base, int radius, int vertical) {
-        World w = base.getWorld();
-        if (w == null) return null;
-
-        int bx = base.getBlockX();
-        int by = base.getBlockY();
-        int bz = base.getBlockZ();
-
-        // ring search outward for closest safe
-        for (int dy = 0; dy <= vertical; dy++) {
-            for (int sign : new int[]{0, 1, -1}) {
-                int y = by + (dy * sign);
-
-                for (int r = 0; r <= radius; r++) {
-                    for (int dx = -r; dx <= r; dx++) {
-                        for (int dz = -r; dz <= r; dz++) {
-                            if (Math.abs(dx) != r && Math.abs(dz) != r) continue;
-
-                            Location cand = new Location(
-                                    w,
-                                    bx + dx + 0.5,
-                                    y,
-                                    bz + dz + 0.5,
-                                    base.getYaw(),
-                                    base.getPitch()
-                            );
-
-                            if (isPhysicallySafe(cand)) return cand;
-                        }
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-
     private void applySoftProtection(Player player, int seconds) {
+        UUID uuid = player.getUniqueId();
+
         // Clear immediate hazards
         player.setFireTicks(0);
 
         // Temporary invulnerability
+        plugin.softProtectedPlayers.add(uuid);
         player.setInvulnerable(true);
 
         // Optional: a bit of resistance so explosions / first hits don’t chunk them
@@ -280,9 +188,7 @@ public class JoinSequence {
         long ticks = seconds * 20L;
         plugin.getPlatformScheduler().runEntityDelayed(player, () -> {
             if (!player.isOnline()) return;
-            player.setInvulnerable(false);
-            // Let potion expire naturally, or clear it explicitly:
-            // player.removePotionEffect(PotionEffectType.RESISTANCE);
+            plugin.clearSoftProtectionState(player);
         }, min1(ticks));
     }
 

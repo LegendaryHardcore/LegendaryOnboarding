@@ -23,6 +23,10 @@ import java.util.logging.Level;
  */
 public final class ConfigUpdater {
     private static final String CONFIG_FILE_NAME = "config.yml";
+    private static final String OLD_FIRST_JOIN_MESSAGE =
+            "{yellow}{player} has joined for the first time.";
+    private static final String CURRENT_FIRST_JOIN_MESSAGE =
+            "{yellow}{player} joined the server for the first time";
 
     private final JavaPlugin plugin;
 
@@ -70,6 +74,7 @@ public final class ConfigUpdater {
         Set<String> removedPaths = new HashSet<>();
         String originalYaml = liveConfig.saveToString();
 
+        migrateFormerDefaults(liveConfig);
         overlayExistingValues(liveConfig, mergedConfig, "", removedPaths);
 
         String mergedYaml = mergedConfig.saveToString();
@@ -79,6 +84,12 @@ public final class ConfigUpdater {
         }
 
         return new UpdateResult(updated, Set.copyOf(removedPaths));
+    }
+
+    private static void migrateFormerDefaults(YamlConfiguration config) {
+        if (OLD_FIRST_JOIN_MESSAGE.equals(config.getString("FIRST_JOIN_MESSAGE"))) {
+            config.set("FIRST_JOIN_MESSAGE", CURRENT_FIRST_JOIN_MESSAGE);
+        }
     }
 
     static YamlConfiguration load(File file)

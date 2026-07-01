@@ -34,6 +34,7 @@ public class PlayerCommandBlocker implements Listener {
         // Normalize command
         String message = event.getMessage().toLowerCase().trim();
         if (!message.startsWith("/")) return;
+        if (isOnboardingHelpCommand(message)) return;
 
         String command = message.substring(1).split(" ")[0];
 
@@ -54,5 +55,21 @@ public class PlayerCommandBlocker implements Listener {
         // Block everything else
         event.setCancelled(true);
         event.getPlayer().sendMessage("§cYou must accept the rules before using commands.");
+    }
+
+    static boolean isOnboardingHelpCommand(String message) {
+        if (message == null) return false;
+        String normalized = message.toLowerCase().trim();
+        if (!normalized.startsWith("/")) return false;
+
+        String[] parts = normalized.substring(1).split("\\s+");
+        String root = parts[0];
+        if (root.contains(":")) {
+            root = root.substring(root.indexOf(':') + 1);
+        }
+        if (!root.equals("lo") && !root.equals("legendaryonboarding")) {
+            return false;
+        }
+        return parts.length == 1 || parts[1].equals("help");
     }
 }

@@ -3,6 +3,8 @@ version: ${version}
 main: org.LegendaryHardcore.legendaryonboarding.paper.PaperLegendaryOnboarding
 api-version: '1.21'
 authors: [Natonite, Thowan]
+loadbefore: [TabCompleteFilter]
+softdepend: [ChatControl, ChatControlRed]
 
 commands:
   accept:
@@ -11,12 +13,15 @@ commands:
     permission: legendaryonboarding.accept
   legendaryonboarding:
     description: Manage LegendaryOnboarding
-    usage: /legendaryonboarding reload
+    usage: /legendaryonboarding <help | reload | status | debug>
     aliases: [lo]
-    permission: legendaryonboarding.reload
 
 permissions:
   legendaryonboarding.accept:
     default: true
   legendaryonboarding.reload:
+    default: op
+  legendaryonboarding.status:
+    default: op
+  legendaryonboarding.debug:
     default: op

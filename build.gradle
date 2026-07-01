@@ -2,6 +2,15 @@ plugins {
     id "java"
 }
 
+def pluginVersion = "1.1.4"
+def buildNumber = 11
+
+ext {
+    legendaryOnboardingVersion = pluginVersion
+    legendaryOnboardingBuild = buildNumber
+    legendaryOnboardingDisplayVersion = "${pluginVersion}-b${buildNumber}"
+}
+
 tasks.named("jar") {
     enabled = false
 }
@@ -35,7 +44,7 @@ tasks.named("clean") {
 
 allprojects {
     group = "org.LegendaryHardcore"
-    version = "1.1.1"
+    version = rootProject.ext.legendaryOnboardingDisplayVersion
 
     repositories {
         mavenCentral()

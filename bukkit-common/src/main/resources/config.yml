@@ -12,12 +12,64 @@ ONBOARD_TELEPORT: false
 # Existing acceptance records are preserved and normal behavior resumes when disabled.
 DEBUG_FORCE_ONBOARDING: false
 
+# Also onboard returning players who do not have an accepted record.
+# Useful for testing servers that already have an established player base.
+ONBOARD_UNACCEPTED_RETURNING_PLAYERS: false
+
 # Prevent advancement criteria from being granted during onboarding.
 # This avoids location-based advancements when using a dedicated intro world.
 BLOCK_ADVANCEMENTS: true
 
+# Hide native chat, broadcasts, and standard server announcements from players
+# while they are onboarding. Direct messages from other plugins require a
+# packet-level integration and cannot be intercepted by the server API alone.
+BLOCK_EXTERNAL_MESSAGES_DURING_ONBOARDING: true
+
+# Listener ordering for compatibility with chat and announcement plugins.
+# Valid values: LOWEST, LOW, NORMAL, HIGH, HIGHEST, MONITOR.
+# MONITOR is intentionally supported for final enforcement when another plugin
+# at HIGHEST uncancels chat after LegendaryOnboarding.
+EVENT_PRIORITIES:
+  CHAT_CONSUMPTION: "MONITOR"
+  JOIN_MESSAGE: "HIGHEST"
+  QUIT_MESSAGE: "HIGHEST"
+
+# Hide onboarding players from other players' tab lists without hiding their
+# in-world entity. They are restored when onboarding ends.
+HIDE_ONBOARDING_PLAYERS_FROM_TAB: true
+
+# Sent to a player who attempts to damage someone currently onboarding.
+# Available placeholder: {player}. Set to "" to disable.
+ONBOARDING_DAMAGE_MESSAGE: "{yellow}{player} is currently onboarding."
+
+# Broadcast after a normally joining player completes onboarding.
+# Available placeholder: {player}. Set to "" to disable.
+FIRST_JOIN_MESSAGE: "{yellow}{player} joined the server for the first time"
+
+# Optional recovery location used when the player's saved return location is
+# unavailable or unsafe.
+CLEANUP_FALLBACK_ENABLED: false
+CLEANUP_FALLBACK_WORLD: "world"
+# Used when CLEANUP_FALLBACK_WORLD is not loaded: NORMAL, NETHER, or THE_END.
+CLEANUP_FALLBACK_WORLD_TYPE: "NORMAL"
+CLEANUP_FALLBACK_X: 0
+CLEANUP_FALLBACK_Y: 64
+CLEANUP_FALLBACK_Z: 0
+CLEANUP_FALLBACK_YAW: 0
+CLEANUP_FALLBACK_PITCH: 0
+
+# Randomize fallback X and Z independently within this distance from the
+# configured fallback coordinates. Set to 0 to use the fixed fallback area.
+CLEANUP_FALLBACK_RADIUS: 5000
+
+# Preferred Y level when returning players near their saved X/Z or a world
+# spawn. The plugin still requires safe ground and two passable blocks.
+RETURN_DESIRED_Y: 64
+
 # Optional dedicated onboarding location
 POS_WORLD: "world"
+# Used when POS_WORLD is not loaded: NORMAL, NETHER, or THE_END.
+POS_WORLD_TYPE: "NORMAL"
 POS_X: 0
 POS_Y: 120
 POS_Z: 0
