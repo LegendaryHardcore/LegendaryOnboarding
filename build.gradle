@@ -52,6 +52,10 @@ allprojects {
             name = "papermc-repo"
             url = "https://repo.papermc.io/repository/maven-public/"
         }
+        maven {
+            name = "discordsrv-repo"
+            url = "https://nexus.scarsz.me/content/groups/public/"
+        }
     }
 }
 
@@ -60,7 +64,7 @@ subprojects {
 
     java {
         toolchain {
-            languageVersion = JavaLanguageVersion.of(21)
+            languageVersion = JavaLanguageVersion.of(25)
         }
     }
 

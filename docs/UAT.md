@@ -146,6 +146,7 @@ Create:
 | END-03 | After completion, move and turn, take damage after the temporary protection expires, inspect tab visibility, and check flight/invisibility/invulnerability. | Player is fully released; normal movement, visibility, damage, and flight rules are restored. | | |
 | END-04 | Inspect potion effects after normal completion. | Sequence-managed effects are removed. Unrelated pre-existing effects are not removed by normal completion. | | |
 | END-05 | Reconnect the accepted Tester with testing toggles disabled. | Tester bypasses onboarding and any stale pending entry is cleared. | | |
+| END-06 | Complete onboarding with DiscordSRV enabled and `MESSAGE_CONSUMPTION.DISCORDSRV.JOIN: SOME`. | The configured first-join announcement is visible in game and sent through DiscordSRV using its configured first-join format and destination. | | |
 
 ## Recovery And Cleanup
 

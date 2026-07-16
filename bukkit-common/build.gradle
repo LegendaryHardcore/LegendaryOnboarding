@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     compileOnlyApi("dev.folia:folia-api:1.21.11-R0.1-SNAPSHOT")
+    compileOnly("com.discordsrv:discordsrv:1.30.5")
 
     testImplementation("dev.folia:folia-api:1.21.11-R0.1-SNAPSHOT")
     testImplementation(platform("org.junit:junit-bom:5.13.4"))

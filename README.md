@@ -4,7 +4,7 @@ LegendaryOnboarding is a Paper, Purpur, Folia, and Canvas plugin that presents a
 
 ## Requirements
 
-- Java 21
+- Java 25 to build; the generated plugin bytecode remains Java 21-compatible
 - Paper, Purpur, Folia, or Canvas
 - Built against the Paper API for Minecraft 1.21.11
 
@@ -184,9 +184,12 @@ before in-game delivery and DiscordSRV can process it. `NONE` leaves the event
 untouched, `SOME` consumes only onboarding players' own join/quit messages, and
 `ALL` consumes every native join/quit message. Bukkit exposes one shared native
 event, so consuming it for either destination prevents the other destination
-from receiving that event without a dedicated DiscordSRV relay. For in-game
-delivery, `ALL` replays a copy only to console and players who are not
-onboarding.
+from receiving that event without a dedicated DiscordSRV relay. When a normal
+first-join announcement completes and the native DiscordSRV join event was
+suppressed, the plugin calls DiscordSRV's join-message API with the same text.
+DiscordSRV then applies its own configured first-join formatting and destination
+channel. For in-game delivery, `ALL` replays a copy only to console and players
+who are not onboarding.
 
 ### Sequence Steps
 

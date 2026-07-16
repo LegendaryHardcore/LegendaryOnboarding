@@ -756,6 +756,17 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
                 configured.replace("{player}", player.getName())
         );
         sendToNonOnboardingPlayers(message);
+        if (shouldForwardFirstJoinToDiscord(
+                config.getDiscordSrvJoinMessages()
+        ) && getServer().getPluginManager().isPluginEnabled("DiscordSRV")) {
+            DiscordSrvBridge.forwardFirstJoinMessage(this, player, message);
+        }
+    }
+
+    static boolean shouldForwardFirstJoinToDiscord(
+            ConfigData.MessageConsumption discordSrvJoinMessages
+    ) {
+        return discordSrvJoinMessages != ConfigData.MessageConsumption.NONE;
     }
 
     public void sendToNonOnboardingPlayers(Component message) {

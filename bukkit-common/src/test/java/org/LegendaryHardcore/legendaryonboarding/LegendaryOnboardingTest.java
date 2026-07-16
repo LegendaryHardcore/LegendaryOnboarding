@@ -119,4 +119,19 @@ class LegendaryOnboardingTest {
         assertTrue(LegendaryOnboarding.shouldMarkCleanupOnDisable(true, false));
         assertTrue(LegendaryOnboarding.shouldMarkCleanupOnDisable(false, true));
     }
+
+    @Test
+    void forwardsCompletionAnnouncementWhenDiscordSrvNativeJoinWasSuppressed() {
+        org.junit.jupiter.api.Assertions.assertFalse(
+                LegendaryOnboarding.shouldForwardFirstJoinToDiscord(
+                        ConfigData.MessageConsumption.NONE
+                )
+        );
+        assertTrue(LegendaryOnboarding.shouldForwardFirstJoinToDiscord(
+                ConfigData.MessageConsumption.SOME
+        ));
+        assertTrue(LegendaryOnboarding.shouldForwardFirstJoinToDiscord(
+                ConfigData.MessageConsumption.ALL
+        ));
+    }
 }
