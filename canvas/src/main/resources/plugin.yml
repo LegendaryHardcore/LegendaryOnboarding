@@ -1,10 +1,10 @@
 name: ${name}
 version: ${version}
 main: org.LegendaryHardcore.legendaryonboarding.canvas.CanvasLegendaryOnboarding
-api-version: '1.21'
+api-version: '1.21.11'
 folia-supported: true
 authors: [Natonite, Thowan]
-loadbefore: [TabCompleteFilter]
+loadbefore: [TabCompleteFilter, DiscordSRV]
 softdepend: [ChatControl, ChatControlRed]
 
 commands:

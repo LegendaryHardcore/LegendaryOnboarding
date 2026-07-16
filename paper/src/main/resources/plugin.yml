@@ -3,7 +3,7 @@ version: ${version}
 main: org.LegendaryHardcore.legendaryonboarding.paper.PaperLegendaryOnboarding
 api-version: '1.21'
 authors: [Natonite, Thowan]
-loadbefore: [TabCompleteFilter]
+loadbefore: [TabCompleteFilter, DiscordSRV]
 softdepend: [ChatControl, ChatControlRed]
 
 commands:

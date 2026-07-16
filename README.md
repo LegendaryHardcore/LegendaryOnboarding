@@ -5,7 +5,7 @@ LegendaryOnboarding is a Paper, Purpur, Folia, and Canvas plugin that presents a
 ## Requirements
 
 - Java 21
-- Paper, Purpur, Folia, or Canvas 1.21.x
+- Paper, Purpur, Folia, or Canvas
 - Built against the Paper API for Minecraft 1.21.11
 
 Use the jar matching the server platform:
@@ -95,6 +95,8 @@ Configuration is split by purpose:
 - `EVENT_PRIORITIES` controls when chat cancellation and onboarding join/quit
   message suppression run relative to other plugins. Changing these values with
   `/lo reload` unregisters and rebuilds the affected listeners.
+- `MESSAGE_CONSUMPTION` controls how join and quit messages are consumed for
+  in-game delivery and DiscordSRV-facing native events.
 - `titlesequence.yml` contains the rules, acceptance prompt, post-acceptance sequence, chat messages, formatting, and timing.
 
 On startup, both files are updated to their bundled layouts while preserving supported values, adding new defaults, and removing obsolete settings. When upgrading from the older single-file layout, sequence settings are migrated from `config.yml` into `titlesequence.yml` before obsolete keys are removed.
@@ -105,9 +107,12 @@ On startup, both files are updated to their bundled layouts while preserving sup
 | `ONBOARD_GAMEMODE` | Onboarding game mode: `survival`, `creative`, `spectator`, or `adventure` |
 | `ONBOARD_TELEPORT` | Whether to move the player to the configured onboarding location |
 | `DEBUG_FORCE_ONBOARDING` | Testing mode that enables onboarding and forces every joining player through it without deleting acceptance records |
+| `DEBUG_LOGGING` | Enables detailed onboarding lifecycle logging for debugging and test servers |
 | `ONBOARD_UNACCEPTED_RETURNING_PLAYERS` | Onboards returning players whose acceptance state is false or missing; defaults to `false` |
 | `BLOCK_ADVANCEMENTS` | Prevents advancement criteria from being granted during onboarding; defaults to `true` |
 | `BLOCK_EXTERNAL_MESSAGES_DURING_ONBOARDING` | Hides native chat, broadcasts, and standard server announcements from onboarding players |
+| `MESSAGE_CONSUMPTION.IN_GAME.JOIN` / `QUIT` | `NONE`, `SOME`, or `ALL` handling for native join/quit messages shown in game |
+| `MESSAGE_CONSUMPTION.DISCORDSRV.JOIN` / `QUIT` | `NONE`, `SOME`, or `ALL` handling for native join/quit events before DiscordSRV can consume them |
 | `HIDE_ONBOARDING_PLAYERS_FROM_TAB` | Removes onboarding players from other players' tab lists without hiding their in-world entity |
 | `ONBOARDING_DAMAGE_MESSAGE` | Message sent to someone who attacks an onboarding player; supports `{player}` |
 | `FIRST_JOIN_MESSAGE` | Announcement sent after normal onboarding completes; supports `{player}` |
@@ -173,6 +178,15 @@ chat, broadcasts, and standard join, quit, and advancement announcements. Death
 events are left unchanged so integrations such as DiscordSRV can consume and
 forward their messages. Messages sent directly to a player by another plugin
 cannot be intercepted without a packet-level dependency.
+
+`MESSAGE_CONSUMPTION` controls whether the native join or quit event is cleared
+before in-game delivery and DiscordSRV can process it. `NONE` leaves the event
+untouched, `SOME` consumes only onboarding players' own join/quit messages, and
+`ALL` consumes every native join/quit message. Bukkit exposes one shared native
+event, so consuming it for either destination prevents the other destination
+from receiving that event without a dedicated DiscordSRV relay. For in-game
+delivery, `ALL` replays a copy only to console and players who are not
+onboarding.
 
 ### Sequence Steps
 
@@ -241,6 +255,7 @@ The sequence file uses these top-level settings:
 | --- | --- |
 | `ENABLED` | Enables onboarding; defaults to `false` so the plugin can be configured before use |
 | `ACTIONBAR_COUNTDOWN` | Action-bar countdown shown until `/accept` unlocks; supports `{seconds}` or an empty value to disable |
+| `ACTIONBAR_REFRESH_TICKS` | How often the countdown action bar is resent, in ticks; defaults to `20` |
 | `WELCOME_SEQUENCE` | Configurable welcome steps shown before the rules; supports server and player placeholders |
 | `RULES_SEQUENCE_CONTENT` | Rules steps shown before the acceptance prompt |
 | `RULES_SEQUENCE_FADE_IN`, `RULES_SEQUENCE_DURATION`, `RULES_SEQUENCE_FADE_OUT` | Default rules-step timing |
@@ -286,21 +301,12 @@ On Windows:
 .\gradlew.bat build
 ```
 
-The top-level build compiles and tests the shared code, builds all three platform jars, and copies them into `dist/`:
-
-```text
-dist/
-  LegendaryOnboarding-Paper-1.1.3-b7.jar
-  LegendaryOnboarding-Folia-1.1.3-b7.jar
-  LegendaryOnboarding-Canvas-1.1.3-b7.jar
-```
+The top-level build compiles and tests the shared code, builds all three
+platform jars, and copies the generated artifacts into `dist/`.
 
 The release version is defined in the root `build.gradle`. Packaging with
-`build`, `collectPlatformJars`, or a platform `shadowJar` increments
-`build-number.txt` once for that Gradle invocation. The resulting version, such
-as `1.1.3-b7`, is expanded into each platform's `plugin.yml`, shown by the
-server's plugin/version commands and startup log, and included in the jar name.
-Test-only Gradle runs do not consume a build number.
+`build`, `collectPlatformJars`, or a platform `shadowJar` expands that version
+into each platform's `plugin.yml`, server plugin/version output, and jar name.
 
 ## Testing
 
@@ -311,7 +317,7 @@ Run the automated suite and build all platform artifacts with:
 ```
 
 The manual release checklist is in
-[`docs/UAT-1.1.3.md`](docs/UAT-1.1.3.md). It covers first join, debug modes,
+[`docs/UAT.md`](docs/UAT.md). It covers first join, debug modes,
 message and interaction isolation, damage protection, reload/disable cleanup,
 offline recovery, admin commands, persistence, desired-Y return behavior, and
 Paper/Folia/Canvas smoke testing.

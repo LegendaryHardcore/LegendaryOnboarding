@@ -28,11 +28,6 @@ public final class StandardAnnouncementBlocker implements Listener {
     }
 
     private void sendToEligiblePlayers(Component message) {
-        plugin.getServer().getConsoleSender().sendMessage(message);
-        for (Player player : plugin.getServer().getOnlinePlayers()) {
-            if (!plugin.isOnboardingActive(player.getUniqueId())) {
-                player.sendMessage(message);
-            }
-        }
+        plugin.sendToNonOnboardingPlayers(message);
     }
 }

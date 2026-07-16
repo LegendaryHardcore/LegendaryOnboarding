@@ -12,6 +12,9 @@ ONBOARD_TELEPORT: false
 # Existing acceptance records are preserved and normal behavior resumes when disabled.
 DEBUG_FORCE_ONBOARDING: false
 
+# When true, logs detailed onboarding lifecycle events to console for testing.
+DEBUG_LOGGING: false
+
 # Also onboard returning players who do not have an accepted record.
 # Useful for testing servers that already have an established player base.
 ONBOARD_UNACCEPTED_RETURNING_PLAYERS: false
@@ -24,6 +27,23 @@ BLOCK_ADVANCEMENTS: true
 # while they are onboarding. Direct messages from other plugins require a
 # packet-level integration and cannot be intercepted by the server API alone.
 BLOCK_EXTERNAL_MESSAGES_DURING_ONBOARDING: true
+
+# Join and quit message consumption controls whether the shared native event is
+# cleared before in-game delivery and plugins such as DiscordSRV can consume it.
+# If either target consumes an event, Bukkit cannot forward that same native
+# event to the other target without a dedicated DiscordSRV relay.
+# Valid values:
+# - NONE: leave the native event untouched
+# - SOME: consume only when the joining/quitting player is onboarding
+# - ALL: always consume the native event; in-game messages are then replayed
+#   only to console and players who are not onboarding
+MESSAGE_CONSUMPTION:
+  IN_GAME:
+    JOIN: "SOME"
+    QUIT: "SOME"
+  DISCORDSRV:
+    JOIN: "SOME"
+    QUIT: "SOME"
 
 # Listener ordering for compatibility with chat and announcement plugins.
 # Valid values: LOWEST, LOW, NORMAL, HIGH, HIGHEST, MONITOR.

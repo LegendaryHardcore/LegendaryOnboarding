@@ -12,7 +12,7 @@ import org.bukkit.potion.PotionEffect;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /*
  *  Rules sequence class.
@@ -151,6 +151,7 @@ public class RulesSequence {
 
             plugin.stopCountdown(uuid);
             player.sendActionBar(net.kyori.adventure.text.Component.empty());
+            plugin.debugActionBar(player, "clear", "promptAccept");
             plugin.canAcceptRules.put(uuid, true);
 
             for (TitleContent prompt : plugin.getConfigData().getPromptAccept()) {
@@ -166,23 +167,31 @@ public class RulesSequence {
         }
 
         UUID uuid = player.getUniqueId();
-        AtomicInteger seconds = new AtomicInteger(countdownSeconds(totalTicks));
+        long refreshTicks = plugin.getConfigData().getActionBarRefreshTicks();
+        AtomicLong remainingTicks = new AtomicLong(totalTicks);
         var task = plugin.getPlatformScheduler().runEntityAtFixedRate(
                 player,
                 () -> {
-                    int remaining = seconds.getAndDecrement();
-                    if (!isActive(player) || remaining <= 0) {
+                    long remaining = remainingTicks.getAndAdd(-refreshTicks);
+                    if (!isActive(player) || remaining <= 0L) {
                         plugin.stopCountdown(uuid);
                         player.sendActionBar(net.kyori.adventure.text.Component.empty());
+                        plugin.debugActionBar(player, "clear", "countdown-finished");
                         return;
                     }
+                    int seconds = countdownSeconds(remaining);
                     player.sendActionBar(TextFormatter.format(
-                            applyCountdownPlaceholder(message, remaining)
+                            applyCountdownPlaceholder(message, seconds)
                     ));
+                    plugin.debugActionBar(
+                            player,
+                            "send",
+                            "countdown seconds=" + seconds + " refreshTicks=" + refreshTicks
+                    );
                 },
                 () -> plugin.countdownTasks.remove(uuid),
                 1L,
-                TPS
+                refreshTicks
         );
         plugin.setCountdownTask(uuid, task);
     }

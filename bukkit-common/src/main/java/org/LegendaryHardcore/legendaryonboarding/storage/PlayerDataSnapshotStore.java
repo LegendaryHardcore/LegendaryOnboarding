@@ -55,11 +55,19 @@ public final class PlayerDataSnapshotStore {
                 player.saveData();
                 Path playerData = findExistingPlayerData(uuid);
                 if (playerData == null) {
-                    plugin.getLogger().warning(
-                            "Could not locate player data for " + player.getName()
-                                    + "; durable onboarding recovery is unavailable "
-                                    + "for this session."
-                    );
+                    if (player.hasPlayedBefore()) {
+                        plugin.getLogger().warning(
+                                "Could not locate player data for " + player.getName()
+                                        + "; durable onboarding recovery is unavailable "
+                                        + "for this session."
+                        );
+                    } else {
+                        plugin.getLogger().info(
+                                "No existing playerdata file was found for brand-new player "
+                                        + player.getName()
+                                        + "; pending return location was still recorded."
+                        );
+                    }
                     return false;
                 }
 

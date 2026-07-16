@@ -28,9 +28,14 @@ class LoadConfigTest {
             assertNotNull(defaults);
             var config = ConfigUpdater.load(defaults);
             assertFalse(config.getBoolean("DEBUG_FORCE_ONBOARDING", true));
+            assertFalse(config.getBoolean("DEBUG_LOGGING", true));
             assertTrue(config.getBoolean("BLOCK_ADVANCEMENTS", false));
             assertFalse(config.getBoolean("ONBOARD_UNACCEPTED_RETURNING_PLAYERS", true));
             assertTrue(config.getBoolean("BLOCK_EXTERNAL_MESSAGES_DURING_ONBOARDING", false));
+            assertEquals("SOME", config.getString("MESSAGE_CONSUMPTION.IN_GAME.JOIN"));
+            assertEquals("SOME", config.getString("MESSAGE_CONSUMPTION.IN_GAME.QUIT"));
+            assertEquals("SOME", config.getString("MESSAGE_CONSUMPTION.DISCORDSRV.JOIN"));
+            assertEquals("SOME", config.getString("MESSAGE_CONSUMPTION.DISCORDSRV.QUIT"));
             assertEquals("MONITOR", config.getString("EVENT_PRIORITIES.CHAT_CONSUMPTION"));
             assertEquals("HIGHEST", config.getString("EVENT_PRIORITIES.JOIN_MESSAGE"));
             assertEquals("HIGHEST", config.getString("EVENT_PRIORITIES.QUIT_MESSAGE"));
@@ -63,6 +68,7 @@ class LoadConfigTest {
             var config = ConfigUpdater.load(defaults);
             assertFalse(config.getBoolean("ENABLED", true));
             assertFalse(config.getString("ACTIONBAR_COUNTDOWN", "").isBlank());
+            assertEquals(20, config.getInt("ACTIONBAR_REFRESH_TICKS"));
         }
     }
 
@@ -94,6 +100,13 @@ class LoadConfigTest {
         assertEquals(0, LoadConfig.boundedFallbackRadius(0));
         assertEquals(5000, LoadConfig.boundedFallbackRadius(5000));
         assertEquals(30_000_000, LoadConfig.boundedFallbackRadius(Integer.MAX_VALUE));
+    }
+
+    @Test
+    void usesDefaultForNonPositiveActionBarRefreshTicks() {
+        assertEquals(20, LoadConfig.positiveOrDefault(-1, 20));
+        assertEquals(20, LoadConfig.positiveOrDefault(0, 20));
+        assertEquals(5, LoadConfig.positiveOrDefault(5, 20));
     }
 
     @Test
@@ -132,6 +145,20 @@ class LoadConfigTest {
         );
         assertNull(LoadConfig.parseEventPriority("after-everything"));
         assertNull(LoadConfig.parseEventPriority(null));
+    }
+
+    @Test
+    void parsesMessageConsumptionCaseInsensitively() {
+        assertEquals(
+                ConfigData.MessageConsumption.NONE,
+                LoadConfig.parseMessageConsumption(" none ")
+        );
+        assertEquals(
+                ConfigData.MessageConsumption.ALL,
+                LoadConfig.parseMessageConsumption("ALL")
+        );
+        assertNull(LoadConfig.parseMessageConsumption("sometimes"));
+        assertNull(LoadConfig.parseMessageConsumption(null));
     }
 
     @Test

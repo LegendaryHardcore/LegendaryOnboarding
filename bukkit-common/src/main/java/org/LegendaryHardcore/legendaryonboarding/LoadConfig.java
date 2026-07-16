@@ -2,6 +2,7 @@ package org.LegendaryHardcore.legendaryonboarding;
 
 import org.LegendaryHardcore.legendaryonboarding.ConfigData.PlayerLocation;
 import org.LegendaryHardcore.legendaryonboarding.ConfigData.TitleContent;
+import org.LegendaryHardcore.legendaryonboarding.ConfigData.MessageConsumption;
 import org.bukkit.Bukkit;
 import org.bukkit.SoundCategory;
 import org.bukkit.World;
@@ -60,11 +61,32 @@ public class LoadConfig {
 
             // Are we teleporting the player?
             boolean onboardTeleport = config.getBoolean("ONBOARD_TELEPORT", false);
+            boolean debugLogging = config.getBoolean("DEBUG_LOGGING", false);
             boolean blockAdvancements = config.getBoolean("BLOCK_ADVANCEMENTS", true);
             boolean onboardUnacceptedReturningPlayers =
                     config.getBoolean("ONBOARD_UNACCEPTED_RETURNING_PLAYERS", false);
             boolean blockExternalMessages =
                     config.getBoolean("BLOCK_EXTERNAL_MESSAGES_DURING_ONBOARDING", true);
+            MessageConsumption inGameJoinMessages = parseMessageConsumption(
+                    config.getString("MESSAGE_CONSUMPTION.IN_GAME.JOIN"),
+                    MessageConsumption.SOME,
+                    "MESSAGE_CONSUMPTION.IN_GAME.JOIN"
+            );
+            MessageConsumption inGameQuitMessages = parseMessageConsumption(
+                    config.getString("MESSAGE_CONSUMPTION.IN_GAME.QUIT"),
+                    MessageConsumption.SOME,
+                    "MESSAGE_CONSUMPTION.IN_GAME.QUIT"
+            );
+            MessageConsumption discordSrvJoinMessages = parseMessageConsumption(
+                    config.getString("MESSAGE_CONSUMPTION.DISCORDSRV.JOIN"),
+                    MessageConsumption.SOME,
+                    "MESSAGE_CONSUMPTION.DISCORDSRV.JOIN"
+            );
+            MessageConsumption discordSrvQuitMessages = parseMessageConsumption(
+                    config.getString("MESSAGE_CONSUMPTION.DISCORDSRV.QUIT"),
+                    MessageConsumption.SOME,
+                    "MESSAGE_CONSUMPTION.DISCORDSRV.QUIT"
+            );
             boolean hideOnboardingPlayersFromTab =
                     config.getBoolean("HIDE_ONBOARDING_PLAYERS_FROM_TAB", true);
             boolean cleanupFallbackEnabled =
@@ -140,6 +162,10 @@ public class LoadConfig {
                     "ACTIONBAR_COUNTDOWN",
                     "{yellow}/accept unlocks in {gold}{seconds}{yellow}s"
             );
+            int actionBarRefreshTicks = positiveOrDefault(
+                    titleSequence.getInt("ACTIONBAR_REFRESH_TICKS", 20),
+                    20
+            );
 
             List<TitleContent> welcomeContent = loadTitleContents(
                     titleSequence.getMapList("WELCOME_SEQUENCE"),
@@ -188,6 +214,7 @@ public class LoadConfig {
                     onboardGamemode,
                     onboardLocation,
                     actionBarCountdown,
+                    actionBarRefreshTicks,
                     welcomeContent,
                     rulesContent,
                     promptAccept,
@@ -195,9 +222,14 @@ public class LoadConfig {
                     commandWhitelist,
                     onboardTeleport,
                     debugForceOnboarding,
+                    debugLogging,
                     blockAdvancements,
                     onboardUnacceptedReturningPlayers,
                     blockExternalMessages,
+                    inGameJoinMessages,
+                    inGameQuitMessages,
+                    discordSrvJoinMessages,
+                    discordSrvQuitMessages,
                     hideOnboardingPlayersFromTab,
                     cleanupFallbackLocation,
                     cleanupFallbackEnvironment,
@@ -216,6 +248,10 @@ public class LoadConfig {
 
     public static int nonNegative(int value) {
         return Math.max(0, value);
+    }
+
+    static int positiveOrDefault(int value, int fallback) {
+        return value > 0 ? value : fallback;
     }
 
     static int boundedFallbackRadius(int value) {
@@ -259,6 +295,26 @@ public class LoadConfig {
             return EventPriority.valueOf(
                     value.trim().toUpperCase(java.util.Locale.ROOT)
             );
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
+    private MessageConsumption parseMessageConsumption(
+            String value,
+            MessageConsumption fallback,
+            String path
+    ) {
+        MessageConsumption parsed = parseMessageConsumption(value);
+        if (parsed != null) return parsed;
+        plugin.getLogger().warning(path + " must be NONE, SOME, or ALL; using " + fallback + ".");
+        return fallback;
+    }
+
+    static MessageConsumption parseMessageConsumption(String value) {
+        if (value == null) return null;
+        try {
+            return MessageConsumption.valueOf(value.trim().toUpperCase(java.util.Locale.ROOT));
         } catch (IllegalArgumentException ignored) {
             return null;
         }

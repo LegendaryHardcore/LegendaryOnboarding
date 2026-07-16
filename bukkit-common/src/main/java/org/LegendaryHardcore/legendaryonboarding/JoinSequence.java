@@ -145,6 +145,7 @@ public class JoinSequence {
                         + "; retaining pending onboarding state instead of "
                         + "releasing them at the onboarding location."
         );
+        plugin.markForcedCleanup(uuid);
         plugin.getPendingStore().markCleanupRequired(uuid);
         plugin.joinSequenceActive.remove(uuid);
         plugin.acceptInProgress.remove(uuid);
@@ -157,6 +158,7 @@ public class JoinSequence {
     private void finishOnboarding(Player player) {
         UUID uuid = player.getUniqueId();
         try {
+            plugin.clearForcedCleanup(uuid);
             plugin.stopMovementLock(uuid);
             plugin.clearSequencePotionEffects(player);
             player.setGameMode(GameMode.SURVIVAL);

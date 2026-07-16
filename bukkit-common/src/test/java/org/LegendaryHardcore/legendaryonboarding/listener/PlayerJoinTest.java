@@ -1,5 +1,6 @@
 package org.LegendaryHardcore.legendaryonboarding.listener;
 
+import org.LegendaryHardcore.legendaryonboarding.ConfigData.MessageConsumption;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -23,5 +24,60 @@ class PlayerJoinTest {
         assertTrue(PlayerJoin.shouldOnboardReturningPlayer(true, false, true));
         assertTrue(PlayerJoin.shouldOnboardReturningPlayer(true, true, false));
         assertTrue(PlayerJoin.shouldOnboardReturningPlayer(false, false, false));
+    }
+
+    @Test
+    void messageConsumptionModesMatchExpectedSuppression() {
+        assertFalse(PlayerJoin.shouldConsumeMessage(MessageConsumption.NONE, true));
+        assertFalse(PlayerJoin.shouldConsumeMessage(MessageConsumption.SOME, false));
+        assertTrue(PlayerJoin.shouldConsumeMessage(MessageConsumption.SOME, true));
+        assertTrue(PlayerJoin.shouldConsumeMessage(MessageConsumption.ALL, false));
+    }
+
+    @Test
+    void onlyAllModeRedistributesInGameMessages() {
+        assertFalse(PlayerJoin.shouldRedistributeInGame(MessageConsumption.NONE));
+        assertFalse(PlayerJoin.shouldRedistributeInGame(MessageConsumption.SOME));
+        assertTrue(PlayerJoin.shouldRedistributeInGame(MessageConsumption.ALL));
+    }
+
+    @Test
+    void consumesJoinMessageWhenPlayerWillEnterOrResumeOnboarding() {
+        assertTrue(PlayerJoin.shouldConsumeOwnJoinMessage(
+                true,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+        ));
+        assertTrue(PlayerJoin.shouldConsumeOwnJoinMessage(
+                true,
+                true,
+                false,
+                false,
+                false,
+                true,
+                false
+        ));
+        assertFalse(PlayerJoin.shouldConsumeOwnJoinMessage(
+                true,
+                false,
+                false,
+                true,
+                false,
+                true,
+                false
+        ));
+        assertFalse(PlayerJoin.shouldConsumeOwnJoinMessage(
+                false,
+                false,
+                false,
+                false,
+                false,
+                true,
+                false
+        ));
     }
 }

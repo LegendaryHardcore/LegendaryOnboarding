@@ -41,6 +41,10 @@ ENABLED: false
 # Use {seconds} for the remaining whole seconds. Set to "" to disable.
 ACTIONBAR_COUNTDOWN: "{yellow}/accept unlocks in {gold}{seconds}{yellow}s"
 
+# How often to resend the countdown action bar, in ticks.
+# Lower values can reduce visible blinking on some clients.
+ACTIONBAR_REFRESH_TICKS: 20
+
 
 # =============================================================================
 # WELCOME SEQUENCE

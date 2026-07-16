@@ -1,6 +1,6 @@
-# LegendaryOnboarding 1.1.3 UAT
+# LegendaryOnboarding UAT
 
-Use this checklist before publishing the 1.1.3 platform jars. Run destructive
+Use this checklist before publishing the current platform jars. Run destructive
 data-file cases only on a disposable server or after backing up
 `plugins/LegendaryOnboarding/`.
 
@@ -40,9 +40,17 @@ SERVER_NAME: "UAT Server"
 ONBOARD_GAMEMODE: "adventure"
 ONBOARD_TELEPORT: true
 DEBUG_FORCE_ONBOARDING: false
+DEBUG_LOGGING: false
 ONBOARD_UNACCEPTED_RETURNING_PLAYERS: false
 BLOCK_ADVANCEMENTS: true
 BLOCK_EXTERNAL_MESSAGES_DURING_ONBOARDING: true
+MESSAGE_CONSUMPTION:
+  IN_GAME:
+    JOIN: "SOME"
+    QUIT: "SOME"
+  DISCORDSRV:
+    JOIN: "SOME"
+    QUIT: "SOME"
 HIDE_ONBOARDING_PLAYERS_FROM_TAB: true
 ONBOARDING_DAMAGE_MESSAGE: "{yellow}{player} is currently onboarding."
 FIRST_JOIN_MESSAGE: "{yellow}{player} joined the server for the first time"
@@ -65,6 +73,7 @@ POS_Z: 0
 # titlesequence.yml
 ENABLED: true
 ACTIONBAR_COUNTDOWN: "{yellow}/accept unlocks in {gold}{seconds}{yellow}s"
+ACTIONBAR_REFRESH_TICKS: 20
 ```
 
 Use a short sequence during repeated testing, but keep at least one welcome
@@ -83,8 +92,8 @@ Create:
 
 | ID | Test | Expected | Result | Notes |
 | --- | --- | --- | --- | --- |
-| AUT-01 | Run `.\gradlew.bat clean test collectPlatformJars`. | All tests pass and Paper, Folia, and Canvas 1.1.3 jars are present in `dist/`. | | |
-| AUT-02 | Inspect each generated `plugin.yml` or run `/version LegendaryOnboarding` on each platform. | Plugin version starts with `1.1.3-b`; `/lo` is registered as an alias. | | |
+| AUT-01 | Run `.\gradlew.bat clean test collectPlatformJars`. | All tests pass and Paper, Folia, and Canvas jars are present in `dist/`. | | |
+| AUT-02 | Inspect each generated `plugin.yml` or run `/version LegendaryOnboarding` on each platform. | Plugin version matches the root build configuration; `/lo` is registered as an alias. | | |
 
 ## Configuration And Reload
 
@@ -118,14 +127,15 @@ Create:
 | --- | --- | --- | --- | --- |
 | ISO-01 | Damage onboarding Tester with melee and a projectile from Observer. | Tester takes no damage. Observer receives the configured message naming Tester, with cooldown preventing spam. | | |
 | ISO-02 | Place onboarding Tester in the void for at least five seconds. | Void damage is cancelled and Tester remains alive. | | |
-| ISO-03 | Join and quit while onboarding. | No damage is taken during either transition and no standard join/quit message is shown. | | |
+| ISO-03 | Join and quit while onboarding with the baseline message-consumption settings. | No damage is taken during either transition and no standard join/quit message is shown in game or forwarded through DiscordSRV. | | |
 | ISO-04 | Try moving, turning, attacking, breaking/placing blocks, opening inventories, using/dropping/picking up items, and interacting with entities. | Movement and view remain locked; every listed world interaction is blocked. | | |
 | ISO-05 | Run a non-whitelisted command and then `/accept`. | Non-whitelisted command is blocked; `/accept` reaches the plugin. | | |
 | ISO-06 | Send chat, a server broadcast, and a standard advancement announcement while Tester is onboarding. | Tester does not see the external messages; plugin sequence messages remain visible. | | |
 | ISO-07 | With DiscordSRV enabled, cause a player death while another player is onboarding. | The death message remains visible in game and is delivered to the configured Discord channel. | | |
 | ISO-08 | Mark Tester accepted, then run `/lo debug start Tester` and try sending and receiving chat. | Tester cannot send or receive chat while actively onboarding, regardless of prior acceptance. Normal chat resumes after debug end. | | |
-| ISO-07 | Trigger an advancement criterion while onboarding. | Advancement is not granted. | | |
-| ISO-08 | Compare the player list from Observer and Tester. | Observer cannot see Tester in the tab list. Tester can still see appropriate non-onboarding players. | | |
+| ISO-09 | Join and quit as a completed, non-onboarding Tester with the baseline message-consumption settings. | The native join and quit messages remain visible in game and are forwarded by DiscordSRV. | | |
+| ISO-10 | Trigger an advancement criterion while onboarding. | Advancement is not granted. | | |
+| ISO-11 | Compare the player list from Observer and Tester. | Observer cannot see Tester in the tab list. Tester can still see appropriate non-onboarding players. | | |
 
 ## Completion And Return
 
@@ -147,7 +157,7 @@ Create:
 | REC-04 | Start Tester onboarding, disconnect, then run `/lo debug end Tester`. Reconnect Tester. | `pending.yml` records cleanup while offline. Cleanup and return run on login, then the pending entry is removed. | | |
 | REC-05 | Repeat REC-04, but make the saved world unavailable before reconnecting. | Configured cleanup fallback is used. Player is not released at the onboarding location. | | |
 | REC-06 | Make the saved destination and configured fallback unsafe or unavailable. | A safe current-world or primary-world spawn is used. If no safe destination exists, pending cleanup is retained and a clear error is logged. | | |
-| REC-07 | Reload or disable the plugin while multiple players are onboarding or accepting. | Every affected online and pending player is included in cleanup; no movement locks or protection state remain. | | |
+| REC-07 | Reload or disable the plugin while multiple players are onboarding or accepting. | Players already in forced cleanup retain their cleanup marker. Ordinary unfinished onboarding sessions remain resumable; no movement locks or protection state remain while the plugin is disabled. | | |
 | REC-08 | Restart a Folia server while at least one player is actively onboarding. | Plugin disable completes without `IllegalPluginAccessException`; unfinished pending sessions remain resumable after restart. | | |
 | REC-09 | Disconnect normally during onboarding, disable the plugin before reconnecting, then reconnect. | Player data was saved at the exact original location with onboarding effects cleared; the player does not appear at the onboarding anchor or an unsafe fallback. | | |
 | REC-10 | Kick a player during onboarding, disable the plugin, then reconnect. | The exact original location and cleared player state were durably saved before removal; the pending record remains resumable. | | |

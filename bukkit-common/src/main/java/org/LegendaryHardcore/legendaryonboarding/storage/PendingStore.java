@@ -144,10 +144,25 @@ public final class PendingStore {
         markDirtyAndScheduleSave();
     }
 
+    public void markCleanupRequiredAndFlush(UUID uuid) {
+        pending.compute(uuid, (ignored, existing) -> cleanupRequiredEntry(existing));
+        dirty.set(false);
+        saveScheduled.set(false);
+        saveSync();
+    }
+
     public void markAllCleanupRequired() {
         if (pending.isEmpty()) return;
         pending.replaceAll((ignored, existing) -> cleanupRequiredEntry(existing));
         markDirtyAndScheduleSave();
+    }
+
+    public void markAllCleanupRequiredAndFlush() {
+        if (pending.isEmpty()) return;
+        pending.replaceAll((ignored, existing) -> cleanupRequiredEntry(existing));
+        dirty.set(false);
+        saveScheduled.set(false);
+        saveSync();
     }
 
     static PendingEntry cleanupRequiredEntry(PendingEntry existing) {

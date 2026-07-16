@@ -1,5 +1,7 @@
 package org.LegendaryHardcore.legendaryonboarding.listener;
 
+import net.kyori.adventure.text.Component;
+import org.LegendaryHardcore.legendaryonboarding.ConfigData.MessageConsumption;
 import org.LegendaryHardcore.legendaryonboarding.LegendaryOnboarding;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
@@ -49,6 +51,18 @@ public class PlayerJoin implements Listener {
         final boolean onboardReturning =
                 plugin.getConfigData().isOnboardUnacceptedReturningPlayers();
         final boolean debugForced = forceOnboarding && (accepted || player.hasPlayedBefore());
+        consumeJoinMessageIfConfigured(
+                event,
+                shouldConsumeOwnJoinMessage(
+                        sequenceEnabled,
+                        hasPending,
+                        cleanupRequired,
+                        accepted,
+                        forceOnboarding,
+                        player.hasPlayedBefore(),
+                        onboardReturning
+                )
+        );
 
         // If accepted, ensure no stale onboarding state remains, then bail
         if (accepted && !forceOnboarding) {
@@ -71,7 +85,6 @@ public class PlayerJoin implements Listener {
         // mid-onboarding. Their current login location is authoritative: the
         // plugin may have been disabled while they played and moved elsewhere.
         if (hasPending) {
-            event.joinMessage(null);
             boolean resumingDebug =
                     debugForced || plugin.getPendingStore().isDebugSession(uuid);
             boolean announceWhenComplete =
@@ -96,12 +109,73 @@ public class PlayerJoin implements Listener {
             return;
         }
 
-        event.joinMessage(null);
         plugin.startOnboarding(player, !forceOnboarding, debugForced);
+    }
+
+    private void consumeJoinMessageIfConfigured(
+            PlayerJoinEvent event,
+            boolean onboardingRelated
+    ) {
+        MessageConsumption inGameMode = plugin.getConfigData().getInGameJoinMessages();
+        MessageConsumption discordSrvMode = plugin.getConfigData().getDiscordSrvJoinMessages();
+        boolean consumeInGame = shouldConsumeMessage(inGameMode, onboardingRelated);
+        boolean consumeDiscordSrv = shouldConsumeMessage(discordSrvMode, onboardingRelated);
+        plugin.debugLog(() -> "Join message handling player=" + event.getPlayer().getName()
+                + " onboardingRelated=" + onboardingRelated
+                + " inGameMode=" + inGameMode
+                + " discordSrvMode=" + discordSrvMode
+                + " consumeInGame=" + consumeInGame
+                + " consumeDiscordSrv=" + consumeDiscordSrv);
+        if (!consumeInGame && !consumeDiscordSrv) return;
+
+        Component original = event.joinMessage();
+        if (original == null) return;
+
+        event.joinMessage(null);
+        if (consumeInGame && shouldRedistributeInGame(inGameMode)) {
+            plugin.sendToNonOnboardingPlayers(original);
+        }
     }
 
     static boolean shouldReleasePendingPlayer(boolean sequenceEnabled, boolean hasPending) {
         return !sequenceEnabled && hasPending;
+    }
+
+    static boolean shouldConsumeOwnJoinMessage(
+            boolean sequenceEnabled,
+            boolean hasPending,
+            boolean cleanupRequired,
+            boolean accepted,
+            boolean forceOnboarding,
+            boolean hasPlayedBefore,
+            boolean onboardUnacceptedReturningPlayers
+    ) {
+        if (cleanupRequired || hasPending) {
+            return true;
+        }
+        if (!sequenceEnabled) {
+            return false;
+        }
+        if (accepted && !forceOnboarding) {
+            return false;
+        }
+        return shouldOnboardReturningPlayer(
+                hasPlayedBefore,
+                forceOnboarding,
+                onboardUnacceptedReturningPlayers
+        );
+    }
+
+    static boolean shouldConsumeMessage(MessageConsumption mode, boolean onboardingActive) {
+        return switch (mode) {
+            case NONE -> false;
+            case SOME -> onboardingActive;
+            case ALL -> true;
+        };
+    }
+
+    static boolean shouldRedistributeInGame(MessageConsumption mode) {
+        return mode == MessageConsumption.ALL;
     }
 
     static boolean shouldOnboardReturningPlayer(

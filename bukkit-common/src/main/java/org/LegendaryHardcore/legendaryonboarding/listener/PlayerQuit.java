@@ -1,5 +1,7 @@
 package org.LegendaryHardcore.legendaryonboarding.listener;
 
+import net.kyori.adventure.text.Component;
+import org.LegendaryHardcore.legendaryonboarding.ConfigData.MessageConsumption;
 import org.LegendaryHardcore.legendaryonboarding.LegendaryOnboarding;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -15,25 +17,40 @@ public class PlayerQuit implements Listener {
     }
 
     public void suppressOnboardingQuitMessage(PlayerQuitEvent event) {
-        if (shouldSuppressQuitMessage(
-                plugin.isOnboardingActive(event.getPlayer().getUniqueId())
-        )) {
-            event.quitMessage(null);
+        MessageConsumption inGameMode = plugin.getConfigData().getInGameQuitMessages();
+        MessageConsumption discordSrvMode = plugin.getConfigData().getDiscordSrvQuitMessages();
+        boolean onboardingActive = plugin.isOnboardingActive(event.getPlayer().getUniqueId());
+        boolean consumeInGame = PlayerJoin.shouldConsumeMessage(inGameMode, onboardingActive);
+        boolean consumeDiscordSrv = PlayerJoin.shouldConsumeMessage(discordSrvMode, onboardingActive);
+        plugin.debugLog(() -> "Quit message handling player=" + event.getPlayer().getName()
+                + " onboardingActive=" + onboardingActive
+                + " inGameMode=" + inGameMode
+                + " discordSrvMode=" + discordSrvMode
+                + " consumeInGame=" + consumeInGame
+                + " consumeDiscordSrv=" + consumeDiscordSrv);
+        if (!consumeInGame && !consumeDiscordSrv) return;
+
+        Component original = event.quitMessage();
+        if (original == null) return;
+
+        event.quitMessage(null);
+        if (consumeInGame && PlayerJoin.shouldRedistributeInGame(inGameMode)) {
+            plugin.sendToNonOnboardingPlayers(original);
         }
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerKick(PlayerKickEvent event) {
-        plugin.preparePlayerForDeparture(event.getPlayer());
+        plugin.deferPlayerDepartureCleanup(event.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerQuit(PlayerQuitEvent event) {
-        plugin.preparePlayerForDeparture(event.getPlayer());
+        plugin.deferPlayerDepartureCleanup(event.getPlayer());
         plugin.scheduleDepartureSnapshotRestore(event.getPlayer().getUniqueId());
     }
 
     static boolean shouldSuppressQuitMessage(boolean onboardingActive) {
-        return onboardingActive;
+        return PlayerJoin.shouldConsumeMessage(MessageConsumption.SOME, onboardingActive);
     }
 }

@@ -64,6 +64,14 @@ class LegendaryOnboardingTest {
     }
 
     @Test
+    void ordinaryDisconnectsDoNotPreserveCleanupMode() {
+        org.junit.jupiter.api.Assertions.assertFalse(
+                LegendaryOnboarding.shouldPreserveCleanupOnDeferredDeparture(false)
+        );
+        assertTrue(LegendaryOnboarding.shouldPreserveCleanupOnDeferredDeparture(true));
+    }
+
+    @Test
     void unfinishedShutdownSessionResumesInsteadOfCleaningUp() {
         assertTrue(LegendaryOnboarding.shouldResumePendingPlayer(
                 true,
@@ -101,5 +109,14 @@ class LegendaryOnboardingTest {
                         false
                 )
         );
+    }
+
+    @Test
+    void shutdownOnlyPreservesCleanupForCleanupAlreadyInProgress() {
+        org.junit.jupiter.api.Assertions.assertFalse(
+                LegendaryOnboarding.shouldMarkCleanupOnDisable(false, false)
+        );
+        assertTrue(LegendaryOnboarding.shouldMarkCleanupOnDisable(true, false));
+        assertTrue(LegendaryOnboarding.shouldMarkCleanupOnDisable(false, true));
     }
 }

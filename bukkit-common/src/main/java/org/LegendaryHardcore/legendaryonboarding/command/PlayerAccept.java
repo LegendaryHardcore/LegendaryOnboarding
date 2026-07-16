@@ -69,6 +69,7 @@ public class PlayerAccept implements CommandExecutor {
         plugin.canAcceptRules.put(uuid, false);
         plugin.stopCountdown(uuid);
         player.sendActionBar(net.kyori.adventure.text.Component.empty());
+        plugin.debugActionBar(player, "clear", "player-accept");
 
         // Clear the long-running prompt title
         player.resetTitle();

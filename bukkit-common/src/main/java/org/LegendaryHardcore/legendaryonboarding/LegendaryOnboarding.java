@@ -17,6 +17,7 @@ import org.LegendaryHardcore.legendaryonboarding.listener.MessageResponsibilityM
 import org.LegendaryHardcore.legendaryonboarding.platform.ServerScheduler;
 import org.LegendaryHardcore.legendaryonboarding.platform.TaskHandle;
 
+import net.kyori.adventure.text.Component;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.Location;
 import org.bukkit.GameMode;
@@ -34,6 +35,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.random.RandomGenerator;
+import java.util.function.Supplier;
 
 /*
  *   Main Onboard plugin class
@@ -59,6 +61,27 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
         return this.config;
     }
 
+    public boolean isDebugLoggingEnabled() {
+        return config != null && config.isDebugLogging();
+    }
+
+    public void debugLog(String message) {
+        if (!isDebugLoggingEnabled()) return;
+        getLogger().info("[Debug] " + message);
+    }
+
+    public void debugLog(Supplier<String> messageSupplier) {
+        if (!isDebugLoggingEnabled()) return;
+        getLogger().info("[Debug] " + messageSupplier.get());
+    }
+
+    public void debugActionBar(Player player, String action, String detail) {
+        if (!isDebugLoggingEnabled()) return;
+        getLogger().info("[Debug] ActionBar " + action
+                + " player=" + player.getName()
+                + " detail=" + detail);
+    }
+
     private AcceptedStore acceptedStore;
     public AcceptedStore getAcceptedStore() { return acceptedStore; }
 
@@ -76,6 +99,8 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
     public final java.util.Set<UUID> suppressedJoinMessages =
             java.util.concurrent.ConcurrentHashMap.newKeySet();
     public final java.util.Set<UUID> softProtectedPlayers =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private final java.util.Set<UUID> forcedCleanupPlayers =
             java.util.concurrent.ConcurrentHashMap.newKeySet();
     private final java.util.Set<TabVisibilityPair> hiddenTabPlayers =
             java.util.concurrent.ConcurrentHashMap.newKeySet();
@@ -162,6 +187,18 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
         }
         if (pendingStore != null) {
             java.util.Set<UUID> onboardingPlayers = allOnboardingPlayers();
+            // A normal shutdown must preserve resumable onboarding sessions.
+            // Keep (or persist) a cleanup marker only for cleanup already in
+            // progress, including a cleanup whose asynchronous work has not
+            // completed yet.
+            for (UUID uuid : onboardingPlayers) {
+                if (shouldMarkCleanupOnDisable(
+                        pendingStore.isCleanupRequired(uuid),
+                        forcedCleanupPlayers.contains(uuid)
+                )) {
+                    pendingStore.markCleanupRequired(uuid);
+                }
+            }
             for (Player player : getServer().getOnlinePlayers()) {
                 if (onboardingPlayers.contains(player.getUniqueId())) {
                     try {
@@ -177,7 +214,6 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
                     }
                 }
             }
-            pendingStore.markAllCleanupRequired();
             restoreOfflineRequiredSnapshots();
         }
         restoreAllTabPlayersOnDisable();
@@ -189,6 +225,7 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
         hiddenTabPlayers.clear();
         departureCleanupPlayers.clear();
         softProtectedPlayers.clear();
+        forcedCleanupPlayers.clear();
         sequencePotionEffects.clear();
         countdownTasks.values().forEach(TaskHandle::cancel);
         countdownTasks.clear();
@@ -294,7 +331,7 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
             boolean announceWhenComplete,
             boolean debugForced
     ) {
-        return startOnboarding(player, announceWhenComplete, debugForced, true);
+        return startOnboarding(player, announceWhenComplete, debugForced, false);
     }
 
     private boolean startOnboarding(
@@ -309,6 +346,7 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
 
         UUID uuid = player.getUniqueId();
         departureCleanupPlayers.remove(uuid);
+        forcedCleanupPlayers.remove(uuid);
         stopCountdown(uuid);
         stopMovementLock(uuid);
         acceptInProgress.remove(uuid);
@@ -316,13 +354,21 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
         canAcceptRules.put(uuid, false);
         player.resetTitle();
         player.sendActionBar(net.kyori.adventure.text.Component.empty());
+        debugActionBar(player, "clear", "startOnboarding");
         clearSequencePotionEffects(player);
 
         boolean newReturnLocation = refreshReturnLocation
                 || !pendingStore.hasPending(uuid)
                 || pendingStore.isCleanupRequired(uuid);
+        debugLog(() -> "startOnboarding player=" + player.getName()
+                + " refreshReturnLocation=" + refreshReturnLocation
+                + " hasPending=" + pendingStore.hasPending(uuid)
+                + " cleanupRequired=" + pendingStore.isCleanupRequired(uuid)
+                + " announceWhenComplete=" + announceWhenComplete
+                + " debugForced=" + debugForced);
         if (!newReturnLocation) {
             pendingStore.configureSession(uuid, debugForced, announceWhenComplete);
+            debugLog(() -> "Reusing saved return location for " + player.getName());
             beginOnboardingSequence(player, announceWhenComplete, debugForced);
             return true;
         }
@@ -393,6 +439,8 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
                 debugForced,
                 announceWhenComplete
         );
+        debugLog(() -> "Captured return location for " + player.getName()
+                + " at " + formatDebugLocation(returnLocation));
         beginOnboardingSequence(player, announceWhenComplete, debugForced);
     }
 
@@ -423,6 +471,9 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
         player.setFireTicks(0);
         player.setFallDistance(0f);
         hideOnboardingPlayerFromTab(player);
+        debugLog(() -> "Beginning onboarding sequence for " + player.getName()
+                + " announceWhenComplete=" + announceWhenComplete
+                + " debugForced=" + debugForced);
         platformScheduler.runEntity(player, () -> rulesSequence.start(player));
     }
 
@@ -447,8 +498,51 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
         forgetTabVisibility(player);
     }
 
+    public void deferPlayerDepartureCleanup(Player player) {
+        UUID uuid = player.getUniqueId();
+        softProtectedPlayers.remove(uuid);
+        boolean forcedCleanupPending = forcedCleanupPlayers.contains(uuid);
+
+        boolean hasPending = pendingStore != null && pendingStore.hasPending(uuid);
+        if (!shouldRestoreDepartingPlayer(isOnboardingActive(uuid), hasPending)) {
+            clearRuntimeState(uuid);
+            forgetTabVisibility(player);
+            return;
+        }
+        if (!departureCleanupPlayers.add(uuid)) return;
+
+        if (playerDataSnapshotStore != null) {
+            playerDataSnapshotStore.markRestoreRequired(uuid);
+        }
+        if (hasPending && !shouldPreserveCleanupOnDeferredDeparture(forcedCleanupPending)) {
+            pendingStore.configureSession(
+                    uuid,
+                    debugForcedPlayers.contains(uuid) || pendingStore.isDebugSession(uuid),
+                    suppressedJoinMessages.contains(uuid)
+                            || pendingStore.shouldAnnounceWhenComplete(uuid)
+            );
+        }
+        // Ordinary disconnects must remain resumable. Reserve cleanupRequired
+        // for explicit cleanup flows such as debug end or plugin/server shutdown.
+        debugLog(() -> "Deferring departure cleanup for " + player.getName()
+                + " hasPending=" + hasPending
+                + " onboardingActive=" + isOnboardingActive(uuid)
+                + " forcedCleanupPending=" + forcedCleanupPending);
+        clearRuntimeState(uuid);
+        forgetTabVisibility(player);
+    }
+
     public void beginPlayerSession(UUID uuid) {
         departureCleanupPlayers.remove(uuid);
+        forcedCleanupPlayers.remove(uuid);
+    }
+
+    public void markForcedCleanup(UUID uuid) {
+        forcedCleanupPlayers.add(uuid);
+    }
+
+    public void clearForcedCleanup(UUID uuid) {
+        forcedCleanupPlayers.remove(uuid);
     }
 
     public void queueDeferredDebugFix(UUID uuid) {
@@ -531,6 +625,17 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
             boolean hasPending
     ) {
         return onboardingActive || hasPending;
+    }
+
+    static boolean shouldPreserveCleanupOnDeferredDeparture(boolean forcedCleanupPending) {
+        return forcedCleanupPending;
+    }
+
+    static boolean shouldMarkCleanupOnDisable(
+            boolean cleanupAlreadyRequired,
+            boolean forcedCleanupInProgress
+    ) {
+        return cleanupAlreadyRequired || forcedCleanupInProgress;
     }
 
     private CompletableFuture<Boolean> restorePlayerStateForDeparture(
@@ -619,6 +724,7 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
         joinSequenceActive.remove(uuid);
         debugForcedPlayers.remove(uuid);
         restoreOnboardingPlayerToTab(player);
+        debugLog(() -> "Completed onboarding for " + player.getName());
         if (suppressedJoinMessages.remove(uuid)) {
             platformScheduler.runEntityDelayed(
                     player,
@@ -646,9 +752,13 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
         String configured = config.getFirstJoinMessage();
         if (configured == null || configured.isBlank()) return;
 
-        net.kyori.adventure.text.Component message = TextFormatter.formatChat(
+        Component message = TextFormatter.formatChat(
                 configured.replace("{player}", player.getName())
         );
+        sendToNonOnboardingPlayers(message);
+    }
+
+    public void sendToNonOnboardingPlayers(Component message) {
         getServer().getConsoleSender().sendMessage(message);
         for (Player recipient : getServer().getOnlinePlayers()) {
             if (!isOnboardingActive(recipient.getUniqueId())) {
@@ -662,6 +772,8 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
             Location preferred,
             Consumer<Location> callback
     ) {
+        debugLog(() -> "Resolving return location for " + player.getName()
+                + " preferred=" + formatDebugLocation(preferred));
         List<ReturnSearch> searches = new ArrayList<>();
         if (preferred != null && preferred.getWorld() != null) {
             searches.add(new ReturnSearch(preferred, ReturnSearchMode.DESIRED_Y));
@@ -753,6 +865,9 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
             Location result = safe;
             platformScheduler.runEntity(player, () -> {
                 if (result != null) {
+                    debugLog(() -> "Resolved return location for " + player.getName()
+                            + " to " + formatDebugLocation(result)
+                            + " using " + search.mode());
                     callback.accept(result);
                 } else {
                     resolveSafeReturnLocation(player, searches, index + 1, callback);
@@ -958,6 +1073,7 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
         clearSequencePotionEffects(player);
         player.resetTitle();
         player.sendActionBar(net.kyori.adventure.text.Component.empty());
+        debugActionBar(player, "clear", "applyDebugFix");
         player.stopAllSounds();
 
         player.setInvisible(false);
@@ -988,6 +1104,7 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
 
         player.resetTitle();
         player.sendActionBar(net.kyori.adventure.text.Component.empty());
+        debugActionBar(player, "clear", "clearAllPlayerEffects");
         player.stopAllSounds();
 
         player.setGameMode(GameMode.SURVIVAL);
@@ -1076,6 +1193,7 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
 
     private void releaseActivePlayers(java.util.Set<UUID> players) {
         for (UUID uuid : players) {
+            forcedCleanupPlayers.add(uuid);
             if (pendingStore != null) {
                 pendingStore.markCleanupRequired(uuid);
             }
@@ -1133,6 +1251,7 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
         player.teleportAsync(target).whenComplete((success, error) ->
                 platformScheduler.runEntity(player, () -> {
                     if (error == null && Boolean.TRUE.equals(success)) {
+                        forcedCleanupPlayers.remove(uuid);
                         playerDataSnapshotStore.delete(uuid);
                         pendingStore.clearPending(uuid);
                         clearAllPlayerEffects(player);
@@ -1163,6 +1282,7 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
     }
 
     private void finishFailedForcedCleanup(Player player, UUID uuid) {
+        forcedCleanupPlayers.remove(uuid);
         getLogger().warning(
                 "Deferred cleanup return teleport failed for "
                         + player.getName()
@@ -1202,6 +1322,18 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
     }
 
     private record ReturnSearch(Location origin, ReturnSearchMode mode) {
+    }
+
+    private static String formatDebugLocation(Location location) {
+        if (location == null || location.getWorld() == null) {
+            return "null";
+        }
+        return location.getWorld().getName()
+                + "("
+                + String.format(java.util.Locale.ROOT, "%.2f", location.getX()) + ", "
+                + String.format(java.util.Locale.ROOT, "%.2f", location.getY()) + ", "
+                + String.format(java.util.Locale.ROOT, "%.2f", location.getZ())
+                + ")";
     }
 
     private enum ReturnSearchMode {

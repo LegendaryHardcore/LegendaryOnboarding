@@ -10,20 +10,32 @@ import java.util.List;
  *  Class for data loaded from config
  */
 public final class ConfigData {
+    public enum MessageConsumption {
+        NONE,
+        SOME,
+        ALL
+    }
+
     private final boolean titleSequenceEnabled;
     private final String serverName;
     private final String onboardGamemode;
     private final PlayerLocation onboardLocation;
     private final String actionBarCountdown;
+    private final int actionBarRefreshTicks;
     private final List<TitleContent> welcomeSequenceContent;
     private final List<TitleContent> rulesSequenceContent;
     private final List<TitleContent> promptAccept;
     private final List<TitleContent> joinSequenceContent;
     private final boolean onboardTeleport;
     private final boolean debugForceOnboarding;
+    private final boolean debugLogging;
     private final boolean blockAdvancements;
     private final boolean onboardUnacceptedReturningPlayers;
     private final boolean blockExternalMessages;
+    private final MessageConsumption inGameJoinMessages;
+    private final MessageConsumption inGameQuitMessages;
+    private final MessageConsumption discordSrvJoinMessages;
+    private final MessageConsumption discordSrvQuitMessages;
     private final boolean hideOnboardingPlayersFromTab;
     private final PlayerLocation cleanupFallbackLocation;
     private final World.Environment cleanupFallbackEnvironment;
@@ -95,6 +107,7 @@ public final class ConfigData {
             String onboardGamemode,
             PlayerLocation onboardLocation,
             String actionBarCountdown,
+            int actionBarRefreshTicks,
             List<TitleContent> welcomeSequenceContent,
             List<TitleContent> rulesSequenceContent,
             List<TitleContent> promptAccept,
@@ -102,9 +115,14 @@ public final class ConfigData {
             List<String> commandWhitelist,
             boolean onboardTeleport,
             boolean debugForceOnboarding,
+            boolean debugLogging,
             boolean blockAdvancements,
             boolean onboardUnacceptedReturningPlayers,
             boolean blockExternalMessages,
+            MessageConsumption inGameJoinMessages,
+            MessageConsumption inGameQuitMessages,
+            MessageConsumption discordSrvJoinMessages,
+            MessageConsumption discordSrvQuitMessages,
             boolean hideOnboardingPlayersFromTab,
             PlayerLocation cleanupFallbackLocation,
             World.Environment cleanupFallbackEnvironment,
@@ -118,6 +136,7 @@ public final class ConfigData {
         this.onboardGamemode = onboardGamemode;
         this.onboardLocation = onboardLocation;
         this.actionBarCountdown = actionBarCountdown;
+        this.actionBarRefreshTicks = actionBarRefreshTicks;
         this.welcomeSequenceContent = welcomeSequenceContent;
         this.rulesSequenceContent = rulesSequenceContent;
         this.promptAccept = promptAccept;
@@ -125,9 +144,14 @@ public final class ConfigData {
         this.commandWhitelist = commandWhitelist;
         this.onboardTeleport = onboardTeleport;
         this.debugForceOnboarding = debugForceOnboarding;
+        this.debugLogging = debugLogging;
         this.blockAdvancements = blockAdvancements;
         this.onboardUnacceptedReturningPlayers = onboardUnacceptedReturningPlayers;
         this.blockExternalMessages = blockExternalMessages;
+        this.inGameJoinMessages = inGameJoinMessages;
+        this.inGameQuitMessages = inGameQuitMessages;
+        this.discordSrvJoinMessages = discordSrvJoinMessages;
+        this.discordSrvQuitMessages = discordSrvQuitMessages;
         this.hideOnboardingPlayersFromTab = hideOnboardingPlayersFromTab;
         this.cleanupFallbackLocation = cleanupFallbackLocation;
         this.cleanupFallbackEnvironment = cleanupFallbackEnvironment;
@@ -158,6 +182,10 @@ public final class ConfigData {
         return actionBarCountdown;
     }
 
+    public int getActionBarRefreshTicks() {
+        return actionBarRefreshTicks;
+    }
+
     public List<TitleContent> getWelcomeSequenceContent() {
         return welcomeSequenceContent;
     }
@@ -178,6 +206,8 @@ public final class ConfigData {
 
     public boolean isDebugForceOnboarding() { return debugForceOnboarding; }
 
+    public boolean isDebugLogging() { return debugLogging; }
+
     public boolean isBlockAdvancements() { return blockAdvancements; }
 
     public boolean isOnboardUnacceptedReturningPlayers() {
@@ -185,6 +215,22 @@ public final class ConfigData {
     }
 
     public boolean isBlockExternalMessages() { return blockExternalMessages; }
+
+    public MessageConsumption getInGameJoinMessages() {
+        return inGameJoinMessages;
+    }
+
+    public MessageConsumption getInGameQuitMessages() {
+        return inGameQuitMessages;
+    }
+
+    public MessageConsumption getDiscordSrvJoinMessages() {
+        return discordSrvJoinMessages;
+    }
+
+    public MessageConsumption getDiscordSrvQuitMessages() {
+        return discordSrvQuitMessages;
+    }
 
     public boolean isHideOnboardingPlayersFromTab() {
         return hideOnboardingPlayersFromTab;
