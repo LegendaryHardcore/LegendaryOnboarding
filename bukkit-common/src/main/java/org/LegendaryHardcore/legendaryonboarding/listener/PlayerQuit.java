@@ -2,6 +2,8 @@ package org.LegendaryHardcore.legendaryonboarding.listener;
 
 import net.kyori.adventure.text.Component;
 import org.LegendaryHardcore.legendaryonboarding.ConfigData.MessageConsumption;
+import org.LegendaryHardcore.legendaryonboarding.DiscordSrvBridge;
+import org.LegendaryHardcore.legendaryonboarding.DiscordSrvMessagesConfig;
 import org.LegendaryHardcore.legendaryonboarding.LegendaryOnboarding;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -36,6 +38,17 @@ public class PlayerQuit implements Listener {
         event.quitMessage(null);
         if (consumeInGame && PlayerJoin.shouldRedistributeInGame(inGameMode)) {
             plugin.sendToNonOnboardingPlayers(original);
+        }
+        if (consumeDiscordSrv && PlayerJoin.shouldRedistributeDiscordSrv(
+                discordSrvMode,
+                onboardingActive
+        )) {
+            DiscordSrvBridge.forward(
+                    plugin,
+                    DiscordSrvMessagesConfig.Type.QUIT,
+                    event.getPlayer(),
+                    original
+            );
         }
     }
 

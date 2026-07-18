@@ -1,0 +1,81 @@
+# Direct Discord announcements sent by LegendaryOnboarding through DiscordSRV.
+#
+# How this file is used depends on MESSAGE_CONSUMPTION.DISCORDSRV in config.yml:
+# - NONE: DiscordSRV uses its own native messages.yml templates; these are unused.
+# - SOME: FIRST_JOIN replaces an onboarding player's delayed first join. Disable
+#   DiscordSRV's MinecraftPlayerFirstJoinMessage, but leave its normal join/quit
+#   templates enabled. JOIN and QUIT below are unused.
+# - ALL: FIRST_JOIN, JOIN, and QUIT below replace DiscordSRV's native notices.
+#   Disable MinecraftPlayerFirstJoinMessage, MinecraftPlayerJoinMessage, and
+#   MinecraftPlayerLeaveMessage in DiscordSRV's messages.yml.
+#
+# This file intentionally uses the same Content/Embed shape as DiscordSRV's messages.yml.
+#
+# Available placeholders: {player}, {display_name}, {message}, {uuid},
+# {avatar_url}, and {server_name}. Set ENABLED to false to disable a template.
+
+FIRST_JOIN:
+  ENABLED: true
+  CONTENT: ""
+  EMBED:
+    ENABLED: true
+    COLOR: "#FFD700"
+    AUTHOR:
+      NAME: "{player} joined the server for the first time"
+      URL: ""
+      IMAGE_URL: "{avatar_url}"
+    THUMBNAIL_URL: ""
+    TITLE:
+      TEXT: ""
+      URL: ""
+    DESCRIPTION: ""
+    IMAGE_URL: ""
+    FOOTER:
+      TEXT: ""
+      ICON_URL: ""
+    TIMESTAMP: true
+    FIELDS: []
+
+JOIN:
+  ENABLED: true
+  CONTENT: ""
+  EMBED:
+    ENABLED: true
+    COLOR: "#57F287"
+    AUTHOR:
+      NAME: "{player} joined the server"
+      URL: ""
+      IMAGE_URL: "{avatar_url}"
+    THUMBNAIL_URL: ""
+    TITLE:
+      TEXT: ""
+      URL: ""
+    DESCRIPTION: ""
+    IMAGE_URL: ""
+    FOOTER:
+      TEXT: ""
+      ICON_URL: ""
+    TIMESTAMP: true
+    FIELDS: []
+
+QUIT:
+  ENABLED: true
+  CONTENT: ""
+  EMBED:
+    ENABLED: true
+    COLOR: "#ED4245"
+    AUTHOR:
+      NAME: "{player} left the server"
+      URL: ""
+      IMAGE_URL: "{avatar_url}"
+    THUMBNAIL_URL: ""
+    TITLE:
+      TEXT: ""
+      URL: ""
+    DESCRIPTION: ""
+    IMAGE_URL: ""
+    FOOTER:
+      TEXT: ""
+      ICON_URL: ""
+    TIMESTAMP: true
+    FIELDS: []

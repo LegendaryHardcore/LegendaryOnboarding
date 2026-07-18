@@ -78,7 +78,7 @@ The safe-location check requires dry, passable feet and head blocks, solid groun
 | --- | --- | --- |
 | `/accept` | Accepts the server rules after the rules sequence finishes | `legendaryonboarding.accept` |
 | `/legendaryonboarding help` (`/lo help`) | Lists the commands available to the sender | None |
-| `/legendaryonboarding reload` (`/lo reload`) | Reloads both configuration files | `legendaryonboarding.reload` |
+| `/legendaryonboarding reload` (`/lo reload`) | Reloads all configuration files | `legendaryonboarding.reload` |
 | `/lo status <playername \| UUID>` | Shows acceptance, pending, and active onboarding state | `legendaryonboarding.status` |
 | `/lo debug start <playername \| UUID>` | Forces an online player into onboarding without a first-join announcement | `legendaryonboarding.debug` |
 | `/lo debug end <playername \| UUID>` | Releases a player and clears all potion effects plus transient onboarding state | `legendaryonboarding.debug` |
@@ -97,9 +97,11 @@ Configuration is split by purpose:
   `/lo reload` unregisters and rebuilds the affected listeners.
 - `MESSAGE_CONSUMPTION` controls how join and quit messages are consumed for
   in-game delivery and DiscordSRV-facing native events.
+- `discordSRVmessages.yml` contains LegendaryOnboarding's direct DiscordSRV
+  templates for first joins, joins, and quits.
 - `titlesequence.yml` contains the rules, acceptance prompt, post-acceptance sequence, chat messages, formatting, and timing.
 
-On startup, both files are updated to their bundled layouts while preserving supported values, adding new defaults, and removing obsolete settings. When upgrading from the older single-file layout, sequence settings are migrated from `config.yml` into `titlesequence.yml` before obsolete keys are removed.
+On startup, all configuration files are updated to their bundled layouts while preserving supported values, adding new defaults, and removing obsolete settings. When upgrading from the older single-file layout, sequence settings are migrated from `config.yml` into `titlesequence.yml` before obsolete keys are removed.
 
 | Setting | Purpose |
 | --- | --- |
@@ -184,12 +186,29 @@ before in-game delivery and DiscordSRV can process it. `NONE` leaves the event
 untouched, `SOME` consumes only onboarding players' own join/quit messages, and
 `ALL` consumes every native join/quit message. Bukkit exposes one shared native
 event, so consuming it for either destination prevents the other destination
-from receiving that event without a dedicated DiscordSRV relay. When a normal
-first-join announcement completes and the native DiscordSRV join event was
-suppressed, the plugin calls DiscordSRV's join-message API with the same text.
-DiscordSRV then applies its own configured first-join formatting and destination
-channel. For in-game delivery, `ALL` replays a copy only to console and players
-who are not onboarding.
+from receiving that event. When LegendaryOnboarding consumes a DiscordSRV-facing
+event, it sends any replacement through its own `discordSRVmessages.yml` template
+to DiscordSRV's main mapped channel. The first-join template is sent after normal
+onboarding completes; the join and quit templates replace non-onboarding native
+events only when the relevant DiscordSRV mode is `ALL`. For in-game delivery,
+`ALL` replays a copy only to console and players who are not onboarding.
+
+### DiscordSRV announcement templates
+
+`discordSRVmessages.yml` provides `FIRST_JOIN`, `JOIN`, and `QUIT` templates.
+Each can be disabled independently with `ENABLED: false` and supports a DiscordSRV-style
+`CONTENT` value plus an optional `EMBED` with color, author, thumbnail, title,
+description, image, footer, timestamp, and `FIELDS`. Fields use
+`name;value;inline`; use `blank` for an empty field.
+
+Available placeholders are `{player}`, `{display_name}`, `{message}`, `{uuid}`,
+`{avatar_url}`, and `{server_name}`. `{avatar_url}` uses DiscordSRV's public
+player-avatar resolver, which derives a player-face URL using its configured
+avatar provider. LegendaryOnboarding sends these templates
+using DiscordSRV's bot and main configured Discord channel. To prevent the
+premature native notices, disable the matching `MinecraftPlayerFirstJoinMessage`,
+`MinecraftPlayerJoinMessage`, and/or `MinecraftPlayerLeaveMessage` templates in
+DiscordSRV's own `messages.yml` when LegendaryOnboarding owns the relevant event.
 
 ### Sequence Steps
 
@@ -285,6 +304,7 @@ Legacy Minecraft formatting remains supported using either `&` or `§`, includin
 The plugin creates these files in `plugins/LegendaryOnboarding/`:
 
 - `config.yml`: server name, onboarding state/location, and command settings.
+- `discordSRVmessages.yml`: direct DiscordSRV first-join, join, and quit templates.
 - `titlesequence.yml`: the complete player-facing onboarding sequence and its timing defaults.
 - `accepted.yml`: accepted UUIDs, up to ten recently seen player names, and the first acceptance timestamp.
 - `pending.yml`: saved return locations for players with unfinished onboarding.

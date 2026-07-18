@@ -29,9 +29,8 @@ BLOCK_ADVANCEMENTS: true
 BLOCK_EXTERNAL_MESSAGES_DURING_ONBOARDING: true
 
 # Join and quit message consumption controls whether the shared native event is
-# cleared before in-game delivery and plugins such as DiscordSRV can consume it.
-# If either target consumes an event, Bukkit cannot forward that same native
-# event to the other target without a dedicated DiscordSRV relay.
+# cleared before in-game delivery and DiscordSRV can consume it. Bukkit exposes
+# only one event, so clearing it prevents native DiscordSRV handling too.
 # Valid values:
 # - NONE: leave the native event untouched
 # - SOME: consume only when the joining/quitting player is onboarding
@@ -42,6 +41,30 @@ MESSAGE_CONSUMPTION:
     JOIN: "SOME"
     QUIT: "SOME"
   DISCORDSRV:
+    # Choose this separately for JOIN and QUIT:
+    #
+    # NONE - LegendaryOnboarding never takes ownership of this Discord message.
+    #        DiscordSRV sends its native announcement immediately. Keep the
+    #        matching template ENABLED in plugins/DiscordSRV/messages.yml:
+    #        MinecraftPlayerFirstJoinMessage or MinecraftPlayerJoinMessage for
+    #        JOIN, and MinecraftPlayerLeaveMessage for QUIT. The matching
+    #        template in discordSRVmessages.yml is not used.
+    #
+    # SOME - Recommended onboarding setting. LegendaryOnboarding suppresses
+    #        native notices only while that player is onboarding. For JOIN,
+    #        disable DiscordSRV's MinecraftPlayerFirstJoinMessage so a new
+    #        player is not announced before they complete onboarding; keep
+    #        MinecraftPlayerJoinMessage enabled for normal players. The local
+    #        FIRST_JOIN template sends after successful onboarding completion.
+    #        For QUIT, onboarding players leave silently while normal players
+    #        still use DiscordSRV's enabled MinecraftPlayerLeaveMessage.
+    #
+    # ALL  - LegendaryOnboarding replaces every native join/quit notice. Disable
+    #        MinecraftPlayerFirstJoinMessage, MinecraftPlayerJoinMessage, and
+    #        MinecraftPlayerLeaveMessage in DiscordSRV's messages.yml. Keep the
+    #        local FIRST_JOIN, JOIN, and QUIT templates enabled in
+    #        discordSRVmessages.yml. Onboarding departures remain intentionally
+    #        silent; FIRST_JOIN is sent only after successful completion.
     JOIN: "SOME"
     QUIT: "SOME"
 

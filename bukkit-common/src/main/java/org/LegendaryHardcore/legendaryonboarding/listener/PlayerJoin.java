@@ -2,6 +2,8 @@ package org.LegendaryHardcore.legendaryonboarding.listener;
 
 import net.kyori.adventure.text.Component;
 import org.LegendaryHardcore.legendaryonboarding.ConfigData.MessageConsumption;
+import org.LegendaryHardcore.legendaryonboarding.DiscordSrvBridge;
+import org.LegendaryHardcore.legendaryonboarding.DiscordSrvMessagesConfig;
 import org.LegendaryHardcore.legendaryonboarding.LegendaryOnboarding;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
@@ -135,6 +137,17 @@ public class PlayerJoin implements Listener {
         if (consumeInGame && shouldRedistributeInGame(inGameMode)) {
             plugin.sendToNonOnboardingPlayers(original);
         }
+        if (consumeDiscordSrv && shouldRedistributeDiscordSrv(
+                discordSrvMode,
+                onboardingRelated
+        )) {
+            DiscordSrvBridge.forward(
+                    plugin,
+                    DiscordSrvMessagesConfig.Type.JOIN,
+                    event.getPlayer(),
+                    original
+            );
+        }
     }
 
     static boolean shouldReleasePendingPlayer(boolean sequenceEnabled, boolean hasPending) {
@@ -176,6 +189,13 @@ public class PlayerJoin implements Listener {
 
     static boolean shouldRedistributeInGame(MessageConsumption mode) {
         return mode == MessageConsumption.ALL;
+    }
+
+    static boolean shouldRedistributeDiscordSrv(
+            MessageConsumption mode,
+            boolean onboardingRelated
+    ) {
+        return mode == MessageConsumption.ALL && !onboardingRelated;
     }
 
     static boolean shouldOnboardReturningPlayer(

@@ -61,6 +61,11 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
         return this.config;
     }
 
+    private DiscordSrvMessagesConfig discordSrvMessagesConfig;
+    public DiscordSrvMessagesConfig getDiscordSrvMessagesConfig() {
+        return this.discordSrvMessagesConfig;
+    }
+
     public boolean isDebugLoggingEnabled() {
         return config != null && config.isDebugLogging();
     }
@@ -759,7 +764,12 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
         if (shouldForwardFirstJoinToDiscord(
                 config.getDiscordSrvJoinMessages()
         ) && getServer().getPluginManager().isPluginEnabled("DiscordSRV")) {
-            DiscordSrvBridge.forwardFirstJoinMessage(this, player, message);
+            DiscordSrvBridge.forward(
+                    this,
+                    DiscordSrvMessagesConfig.Type.FIRST_JOIN,
+                    player,
+                    message
+            );
         }
     }
 
@@ -1141,7 +1151,9 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
 
     public boolean reloadPluginConfig() {
         var titleSequence = new TitleSequenceConfig(this).updateAndLoad();
-        if (titleSequence == null || !new ConfigUpdater(this).update()) {
+        var discordSrvMessages = DiscordSrvMessagesConfig.updateAndLoad(this);
+        if (titleSequence == null || discordSrvMessages == null
+                || !new ConfigUpdater(this).update()) {
             return false;
         }
 
@@ -1156,6 +1168,7 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
         boolean wasHidingFromTab =
                 config != null && config.isHideOnboardingPlayersFromTab();
         this.config = loaded;
+        this.discordSrvMessagesConfig = discordSrvMessages;
         if (messageResponsibilityManager != null) {
             messageResponsibilityManager.activate(loaded.getEventPriorities());
         }

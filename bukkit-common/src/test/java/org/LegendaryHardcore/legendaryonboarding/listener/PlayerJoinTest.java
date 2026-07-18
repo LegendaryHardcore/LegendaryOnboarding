@@ -42,6 +42,14 @@ class PlayerJoinTest {
     }
 
     @Test
+    void onlyNonOnboardingAllModeRedistributesDiscordSrvMessages() {
+        assertFalse(PlayerJoin.shouldRedistributeDiscordSrv(MessageConsumption.NONE, false));
+        assertFalse(PlayerJoin.shouldRedistributeDiscordSrv(MessageConsumption.SOME, false));
+        assertFalse(PlayerJoin.shouldRedistributeDiscordSrv(MessageConsumption.ALL, true));
+        assertTrue(PlayerJoin.shouldRedistributeDiscordSrv(MessageConsumption.ALL, false));
+    }
+
+    @Test
     void consumesJoinMessageWhenPlayerWillEnterOrResumeOnboarding() {
         assertTrue(PlayerJoin.shouldConsumeOwnJoinMessage(
                 true,
