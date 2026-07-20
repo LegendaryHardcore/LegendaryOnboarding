@@ -45,7 +45,7 @@ Until onboarding is complete:
 - Onboarding players can be hidden from other players' tab lists.
 - World interaction is blocked, including outgoing damage, block changes,
   inventories, item use/drop/pickup, entity interaction, and mob targeting.
-- Commands are blocked unless they are listed in `COMMAND_WHITELIST`.
+- Commands are blocked unless they are listed in `ONBOARDSETTINGS.COMMAND_WHITELIST`.
 - `/accept` is always permitted by the command blocker, but it only succeeds after the rules sequence has finished.
 - Repeated `/accept` attempts are guarded so the completion sequence cannot run more than once at a time.
 
@@ -92,10 +92,10 @@ Running `/lo` without arguments also opens the permission-filtered help list.
 Configuration is split by purpose:
 
 - `config.yml` controls the onboarding location, game mode, server name, and command whitelist.
-- `EVENT_PRIORITIES` controls when chat cancellation and onboarding join/quit
+- `ONBOARDSETTINGS.EVENT_PRIORITIES` controls when chat cancellation and onboarding join/quit
   message suppression run relative to other plugins. Changing these values with
   `/lo reload` unregisters and rebuilds the affected listeners.
-- `MESSAGE_CONSUMPTION` controls how join and quit messages are consumed for
+- `ONBOARDSETTINGS.MESSAGE_CONSUMPTION` controls how join and quit messages are consumed for
   in-game delivery and DiscordSRV-facing native events.
 - `discordSRVmessages.yml` contains LegendaryOnboarding's direct DiscordSRV
   templates for first joins, joins, and quits.
@@ -106,28 +106,27 @@ On startup, all configuration files are updated to their bundled layouts while p
 | Setting | Purpose |
 | --- | --- |
 | `SERVER_NAME` | Value inserted by the `{server_name}` sequence placeholder |
-| `ONBOARD_GAMEMODE` | Onboarding game mode: `survival`, `creative`, `spectator`, or `adventure` |
-| `ONBOARD_TELEPORT` | Whether to move the player to the configured onboarding location |
-| `DEBUG_FORCE_ONBOARDING` | Testing mode that enables onboarding and forces every joining player through it without deleting acceptance records |
-| `DEBUG_LOGGING` | Enables detailed onboarding lifecycle logging for debugging and test servers |
-| `ONBOARD_UNACCEPTED_RETURNING_PLAYERS` | Onboards returning players whose acceptance state is false or missing; defaults to `false` |
-| `BLOCK_ADVANCEMENTS` | Prevents advancement criteria from being granted during onboarding; defaults to `true` |
-| `BLOCK_EXTERNAL_MESSAGES_DURING_ONBOARDING` | Hides native chat, broadcasts, and standard server announcements from onboarding players |
-| `MESSAGE_CONSUMPTION.IN_GAME.JOIN` / `QUIT` | `NONE`, `SOME`, or `ALL` handling for native join/quit messages shown in game |
-| `MESSAGE_CONSUMPTION.DISCORDSRV.JOIN` / `QUIT` | `NONE`, `SOME`, or `ALL` handling for native join/quit events before DiscordSRV can consume them |
-| `HIDE_ONBOARDING_PLAYERS_FROM_TAB` | Removes onboarding players from other players' tab lists without hiding their in-world entity |
-| `ONBOARDING_DAMAGE_MESSAGE` | Message sent to someone who attacks an onboarding player; supports `{player}` |
-| `FIRST_JOIN_MESSAGE` | Announcement sent after normal onboarding completes; supports `{player}` |
-| `CLEANUP_FALLBACK_ENABLED` | Enables the configured recovery location when a saved destination is missing or unsafe |
-| `CLEANUP_FALLBACK_WORLD`, `CLEANUP_FALLBACK_X/Y/Z`, `CLEANUP_FALLBACK_YAW/PITCH` | Optional recovery destination |
-| `CLEANUP_FALLBACK_WORLD_TYPE` | Loaded world environment used when the named cleanup world is unavailable: `NORMAL`, `NETHER`, or `THE_END` |
-| `CLEANUP_FALLBACK_RADIUS` | Randomizes fallback X and Z from `-radius` through `+radius` around the configured coordinates; defaults to `5000`, or use `0` for a fixed fallback |
-| `RETURN_DESIRED_Y` | Preferred height used near the saved X/Z and world-spawn fallbacks; defaults to `64` |
-| `POS_WORLD` | Preferred onboarding world name |
-| `POS_WORLD_TYPE` | Loaded world environment used when `POS_WORLD` is unavailable: `NORMAL`, `NETHER`, or `THE_END` |
-| `POS_X`, `POS_Y`, `POS_Z` | Onboarding coordinates |
-| `POS_YAW`, `POS_PITCH` | Onboarding view direction |
-| `COMMAND_WHITELIST` | Commands allowed during onboarding, lowercase and without `/` |
+| `ONBOARDSETTINGS.GAMEMODE` | Onboarding game mode: `survival`, `creative`, `spectator`, or `adventure` |
+| `ONBOARDSETTINGS.TELEPORT` | Whether to move the player to the configured onboarding location |
+| `DEBUG` | A list of named diagnostics; use `FORCE_ONBOARDING` to test every join, and add the documented `LOG_*` entries for individual lifecycle logs |
+| `ONBOARDSETTINGS.FORCE_RETURNING_PLAYERS` | Onboards returning players whose acceptance state is false or missing; defaults to `false` |
+| `ONBOARDSETTINGS.BLOCK_ADVANCEMENTS` | Prevents advancement criteria from being granted during onboarding; defaults to `true` |
+| `ONBOARDSETTINGS.BLOCK_EXTERNAL_MESSAGES_DURING_ONBOARDING` | Hides native chat, broadcasts, and standard server announcements from onboarding players |
+| `ONBOARDSETTINGS.MESSAGE_CONSUMPTION.IN_GAME.JOIN` / `QUIT` | `NONE`, `SOME`, or `ALL` handling for native join/quit messages shown in game |
+| `ONBOARDSETTINGS.MESSAGE_CONSUMPTION.DISCORDSRV.JOIN` / `QUIT` | `NONE`, `SOME`, or `ALL` handling for native join/quit events before DiscordSRV can consume them |
+| `ONBOARDSETTINGS.HIDE_ONBOARDING_PLAYERS_FROM_TAB` | Removes onboarding players from other players' tab lists without hiding their in-world entity |
+| `ONBOARDSETTINGS.DAMAGE_MESSAGE` | Message sent to someone who attacks an onboarding player; supports `{player}` |
+| `ONBOARDSETTINGS.INGAME_FIRST_JOIN_MESSAGE` | Announcement sent after normal onboarding completes; supports `{player}` |
+| `ONBOARDSETTINGS.CLEANUP_FALLBACK_ENABLED` | Enables the configured recovery location when a saved destination is missing or unsafe |
+| `ONBOARDSETTINGS.CLEANUP_FALLBACK_WORLD`, `ONBOARDSETTINGS.CLEANUP_FALLBACK_X/Y/Z`, `ONBOARDSETTINGS.CLEANUP_FALLBACK_YAW/PITCH` | Optional recovery destination |
+| `ONBOARDSETTINGS.CLEANUP_FALLBACK_WORLD_TYPE` | Loaded world environment used when the named cleanup world is unavailable: `NORMAL`, `NETHER`, or `THE_END` |
+| `ONBOARDSETTINGS.CLEANUP_FALLBACK_RADIUS` | Randomizes fallback X and Z from `-radius` through `+radius` around the configured coordinates; defaults to `5000`, or use `0` for a fixed fallback |
+| `ONBOARDSETTINGS.RETURN_DESIRED_Y` | Preferred height used near the saved X/Z and world-spawn fallbacks; defaults to `64` |
+| `ONBOARDSETTINGS.POS_WORLD` | Preferred onboarding world name |
+| `ONBOARDSETTINGS.POS_WORLD_TYPE` | Loaded world environment used when `ONBOARDSETTINGS.POS_WORLD` is unavailable: `NORMAL`, `NETHER`, or `THE_END` |
+| `ONBOARDSETTINGS.POS_X`, `ONBOARDSETTINGS.POS_Y`, `ONBOARDSETTINGS.POS_Z` | Onboarding coordinates |
+| `ONBOARDSETTINGS.POS_YAW`, `ONBOARDSETTINGS.POS_PITCH` | Onboarding view direction |
+| `ONBOARDSETTINGS.COMMAND_WHITELIST` | Commands allowed during onboarding, lowercase and without `/` |
 
 Minecraft formatting codes can be used in configured messages. Namespaced commands are normalized before whitelist checks, so `minecraft:help` is checked as `help`.
 
@@ -135,12 +134,12 @@ The bundled sequence applies blindness during onboarding. Minecraft does not
 display its fog while the player is in spectator mode, so use `adventure`,
 `survival`, or `creative` when blindness should be visible.
 
-For testing on an established server, set `DEBUG_FORCE_ONBOARDING: true`, run
+For testing on an established server, add `FORCE_ONBOARDING` to `DEBUG`, run
 `/lo reload`, then reconnect. Debug mode temporarily activates the title sequence
 even when `ENABLED` is `false` in `titlesequence.yml`.
-Set the debug option back to `false` and reload when testing is complete.
+Remove the option and reload when testing is complete.
 
-For narrower testing, keep `DEBUG_FORCE_ONBOARDING` disabled and use
+For narrower testing, omit `FORCE_ONBOARDING` and use
 `/lo debug start <player>`. Use `/lo debug end <player>` to restore the player
 without accepting the rules or sending the first-join announcement.
 
@@ -158,12 +157,12 @@ unfinished sessions remain resumable. Pending records also persist whether a
 session was debug-forced and whether completion should emit the first-join
 announcement.
 
-Return resolution first checks the player's saved X/Z around `RETURN_DESIRED_Y`.
+Return resolution first checks the player's saved X/Z around `ONBOARDSETTINGS.RETURN_DESIRED_Y`.
 This avoids returning someone to build height merely because they originally
 joined there. The original saved Y remains a later fallback. World-spawn searches
 use the same preferred height and only select safe ground with enough room.
 When the configured cleanup fallback is reached, the plugin samples safe columns
-inside `CLEANUP_FALLBACK_RADIUS` around its configured X/Z coordinates. X and Z
+inside `ONBOARDSETTINGS.CLEANUP_FALLBACK_RADIUS` around its configured X/Z coordinates. X and Z
 are randomized independently, giving a square range such as `-5000` through
 `+5000` on each axis with the default value. The configured fallback world is
 preferred, its configured world type is used when that name is unavailable,
@@ -172,7 +171,7 @@ and unsafe sampled columns are skipped.
 World destinations resolve the configured world name first. If that world is
 not loaded, the plugin selects the first loaded world matching the configured
 world type. Cleanup spawn fallbacks are restricted to
-`CLEANUP_FALLBACK_WORLD_TYPE`, so an invalid overworld fallback cannot silently
+`ONBOARDSETTINGS.CLEANUP_FALLBACK_WORLD_TYPE`, so an invalid overworld fallback cannot silently
 release a player into the End onboarding world.
 
 Message filtering uses the events exposed by Bukkit and Paper. It covers native
@@ -181,7 +180,7 @@ events are left unchanged so integrations such as DiscordSRV can consume and
 forward their messages. Messages sent directly to a player by another plugin
 cannot be intercepted without a packet-level dependency.
 
-`MESSAGE_CONSUMPTION` controls whether the native join or quit event is cleared
+`ONBOARDSETTINGS.MESSAGE_CONSUMPTION` controls whether the native join or quit event is cleared
 before in-game delivery and DiscordSRV can process it. `NONE` leaves the event
 untouched, `SOME` consumes only onboarding players' own join/quit messages, and
 `ALL` consumes every native join/quit message. Bukkit exposes one shared native

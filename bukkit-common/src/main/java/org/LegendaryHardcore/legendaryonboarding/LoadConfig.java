@@ -11,8 +11,10 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.EventPriority;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 
 /*
@@ -36,7 +38,13 @@ public class LoadConfig {
 
         try {
             boolean configuredSequenceEnabled = titleSequence.getBoolean("ENABLED", false);
-            boolean debugForceOnboarding = config.getBoolean("DEBUG_FORCE_ONBOARDING", false);
+            Set<ConfigData.DebugOption> debugOptions = parseDebugOptions(
+                    config.getStringList("DEBUG")
+            );
+            migrateLegacyDebugOptions(config, debugOptions);
+            boolean debugForceOnboarding = debugOptions.contains(
+                    ConfigData.DebugOption.FORCE_ONBOARDING
+            );
             boolean titleSequenceEnabled =
                     isSequenceActive(configuredSequenceEnabled, debugForceOnboarding);
 
@@ -44,93 +52,171 @@ public class LoadConfig {
             String serverName = config.getString("SERVER_NAME", "Minecraft Server");
 
             // Normalize Gamemode
-            String onboardGamemode = config.getString("ONBOARD_GAMEMODE", "SURVIVAL").toUpperCase();
+            String onboardGamemode = settingString(
+                    config, "GAMEMODE", "ONBOARD_GAMEMODE", "SURVIVAL"
+            ).toUpperCase();
             if (onboardGamemode.equals("SPECTATOR")) {
                 plugin.getLogger().warning(
-                        "ONBOARD_GAMEMODE is SPECTATOR, which prevents players from seeing "
+                        "ONBOARDSETTINGS.GAMEMODE is SPECTATOR, which prevents players from seeing "
                                 + "the blindness fog. Use ADVENTURE, SURVIVAL, or CREATIVE "
                                 + "when blindness should be visible."
                 );
             }
 
             // Location used only when teleporting to a dedicated onboarding area.
-            String worldName = config.getString("POS_WORLD", "world");
+            String worldName = settingString(config, "POS_WORLD", "POS_WORLD", "world");
             World.Environment onboardWorldEnvironment = parseWorldEnvironment(
-                    config.getString("POS_WORLD_TYPE", "NORMAL")
+                    settingString(config, "POS_WORLD_TYPE", "POS_WORLD_TYPE", "NORMAL")
             );
 
             // Are we teleporting the player?
-            boolean onboardTeleport = config.getBoolean("ONBOARD_TELEPORT", false);
-            boolean debugLogging = config.getBoolean("DEBUG_LOGGING", false);
-            boolean blockAdvancements = config.getBoolean("BLOCK_ADVANCEMENTS", true);
+            boolean onboardTeleport = settingBoolean(config, "TELEPORT", "ONBOARD_TELEPORT", false);
+            boolean blockAdvancements = settingBoolean(
+                    config, "BLOCK_ADVANCEMENTS", "BLOCK_ADVANCEMENTS", true
+            );
             boolean onboardUnacceptedReturningPlayers =
-                    config.getBoolean("ONBOARD_UNACCEPTED_RETURNING_PLAYERS", false);
+                    settingBoolean(
+                            config,
+                            "FORCE_RETURNING_PLAYERS",
+                            "ONBOARD_UNACCEPTED_RETURNING_PLAYERS",
+                            false
+                    );
             boolean blockExternalMessages =
-                    config.getBoolean("BLOCK_EXTERNAL_MESSAGES_DURING_ONBOARDING", true);
+                    settingBoolean(
+                            config,
+                            "BLOCK_EXTERNAL_MESSAGES_DURING_ONBOARDING",
+                            "BLOCK_EXTERNAL_MESSAGES_DURING_ONBOARDING",
+                            true
+                    );
             MessageConsumption inGameJoinMessages = parseMessageConsumption(
-                    config.getString("MESSAGE_CONSUMPTION.IN_GAME.JOIN"),
+                    settingString(
+                            config,
+                            "MESSAGE_CONSUMPTION.IN_GAME.JOIN",
+                            "MESSAGE_CONSUMPTION.IN_GAME.JOIN",
+                            null
+                    ),
                     MessageConsumption.SOME,
                     "MESSAGE_CONSUMPTION.IN_GAME.JOIN"
             );
             MessageConsumption inGameQuitMessages = parseMessageConsumption(
-                    config.getString("MESSAGE_CONSUMPTION.IN_GAME.QUIT"),
+                    settingString(
+                            config,
+                            "MESSAGE_CONSUMPTION.IN_GAME.QUIT",
+                            "MESSAGE_CONSUMPTION.IN_GAME.QUIT",
+                            null
+                    ),
                     MessageConsumption.SOME,
                     "MESSAGE_CONSUMPTION.IN_GAME.QUIT"
             );
             MessageConsumption discordSrvJoinMessages = parseMessageConsumption(
-                    config.getString("MESSAGE_CONSUMPTION.DISCORDSRV.JOIN"),
+                    settingString(
+                            config,
+                            "MESSAGE_CONSUMPTION.DISCORDSRV.JOIN",
+                            "MESSAGE_CONSUMPTION.DISCORDSRV.JOIN",
+                            null
+                    ),
                     MessageConsumption.SOME,
                     "MESSAGE_CONSUMPTION.DISCORDSRV.JOIN"
             );
             MessageConsumption discordSrvQuitMessages = parseMessageConsumption(
-                    config.getString("MESSAGE_CONSUMPTION.DISCORDSRV.QUIT"),
+                    settingString(
+                            config,
+                            "MESSAGE_CONSUMPTION.DISCORDSRV.QUIT",
+                            "MESSAGE_CONSUMPTION.DISCORDSRV.QUIT",
+                            null
+                    ),
                     MessageConsumption.SOME,
                     "MESSAGE_CONSUMPTION.DISCORDSRV.QUIT"
             );
             boolean hideOnboardingPlayersFromTab =
-                    config.getBoolean("HIDE_ONBOARDING_PLAYERS_FROM_TAB", true);
+                    settingBoolean(
+                            config,
+                            "HIDE_ONBOARDING_PLAYERS_FROM_TAB",
+                            "HIDE_ONBOARDING_PLAYERS_FROM_TAB",
+                            true
+                    );
             boolean cleanupFallbackEnabled =
-                    config.getBoolean("CLEANUP_FALLBACK_ENABLED", false);
+                    settingBoolean(
+                            config,
+                            "CLEANUP_FALLBACK_ENABLED",
+                            "CLEANUP_FALLBACK_ENABLED",
+                            false
+                    );
             World.Environment cleanupFallbackEnvironment = parseWorldEnvironment(
-                    config.getString("CLEANUP_FALLBACK_WORLD_TYPE", "NORMAL")
+                    settingString(
+                            config,
+                            "CLEANUP_FALLBACK_WORLD_TYPE",
+                            "CLEANUP_FALLBACK_WORLD_TYPE",
+                            "NORMAL"
+                    )
             );
             PlayerLocation cleanupFallbackLocation = cleanupFallbackEnabled
                     ? new PlayerLocation(
-                    config.getString("CLEANUP_FALLBACK_WORLD", "world"),
-                    config.getDouble("CLEANUP_FALLBACK_X", 0.0),
-                    config.getDouble("CLEANUP_FALLBACK_Y", 64.0),
-                    config.getDouble("CLEANUP_FALLBACK_Z", 0.0),
-                    (float) config.getDouble("CLEANUP_FALLBACK_YAW", 0.0),
-                    (float) config.getDouble("CLEANUP_FALLBACK_PITCH", 0.0),
+                    settingString(
+                            config, "CLEANUP_FALLBACK_WORLD", "CLEANUP_FALLBACK_WORLD", "world"
+                    ),
+                    settingDouble(config, "CLEANUP_FALLBACK_X", "CLEANUP_FALLBACK_X", 0.0),
+                    settingDouble(config, "CLEANUP_FALLBACK_Y", "CLEANUP_FALLBACK_Y", 64.0),
+                    settingDouble(config, "CLEANUP_FALLBACK_Z", "CLEANUP_FALLBACK_Z", 0.0),
+                    (float) settingDouble(
+                            config, "CLEANUP_FALLBACK_YAW", "CLEANUP_FALLBACK_YAW", 0.0
+                    ),
+                    (float) settingDouble(
+                            config, "CLEANUP_FALLBACK_PITCH", "CLEANUP_FALLBACK_PITCH", 0.0
+                    ),
                     cleanupFallbackEnvironment
             )
                     : null;
             int cleanupFallbackRadius = boundedFallbackRadius(
-                    config.getInt("CLEANUP_FALLBACK_RADIUS", 5000)
+                    settingInt(
+                            config,
+                            "CLEANUP_FALLBACK_RADIUS",
+                            "CLEANUP_FALLBACK_RADIUS",
+                            5000
+                    )
             );
             int returnDesiredY =
-                    config.getInt("RETURN_DESIRED_Y", 64);
-            String onboardingDamageMessage = config.getString(
+                    settingInt(config, "RETURN_DESIRED_Y", "RETURN_DESIRED_Y", 64);
+            String onboardingDamageMessage = settingString(
+                    config,
+                    "DAMAGE_MESSAGE",
                     "ONBOARDING_DAMAGE_MESSAGE",
                     "{yellow}{player} is currently onboarding."
             );
-            String firstJoinMessage = config.getString(
+            String firstJoinMessage = settingString(
+                    config,
+                    "INGAME_FIRST_JOIN_MESSAGE",
                     "FIRST_JOIN_MESSAGE",
                     "{yellow}{player} joined the server for the first time"
             );
             ConfigData.EventPriorities eventPriorities = new ConfigData.EventPriorities(
                     parseEventPriority(
-                            config.getString("EVENT_PRIORITIES.CHAT_CONSUMPTION"),
+                            settingString(
+                                    config,
+                                    "EVENT_PRIORITIES.CHAT_CONSUMPTION",
+                                    "EVENT_PRIORITIES.CHAT_CONSUMPTION",
+                                    null
+                            ),
                             EventPriority.MONITOR,
                             "EVENT_PRIORITIES.CHAT_CONSUMPTION"
                     ),
                     parseEventPriority(
-                            config.getString("EVENT_PRIORITIES.JOIN_MESSAGE"),
+                            settingString(
+                                    config,
+                                    "EVENT_PRIORITIES.JOIN_MESSAGE",
+                                    "EVENT_PRIORITIES.JOIN_MESSAGE",
+                                    null
+                            ),
                             EventPriority.HIGHEST,
                             "EVENT_PRIORITIES.JOIN_MESSAGE"
                     ),
                     parseEventPriority(
-                            config.getString("EVENT_PRIORITIES.QUIT_MESSAGE"),
+                            settingString(
+                                    config,
+                                    "EVENT_PRIORITIES.QUIT_MESSAGE",
+                                    "EVENT_PRIORITIES.QUIT_MESSAGE",
+                                    null
+                            ),
                             EventPriority.HIGHEST,
                             "EVENT_PRIORITIES.QUIT_MESSAGE"
                     )
@@ -138,11 +224,11 @@ public class LoadConfig {
 
             PlayerLocation onboardLocation = new PlayerLocation(
                     worldName,
-                    config.getDouble("POS_X", 0.0),
-                    config.getDouble("POS_Y", 120.0),
-                    config.getDouble("POS_Z", 0.0),
-                    (float) config.getDouble("POS_YAW", 0.0),
-                    (float) config.getDouble("POS_PITCH", 0.0),
+                    settingDouble(config, "POS_X", "POS_X", 0.0),
+                    settingDouble(config, "POS_Y", "POS_Y", 120.0),
+                    settingDouble(config, "POS_Z", "POS_Z", 0.0),
+                    (float) settingDouble(config, "POS_YAW", "POS_YAW", 0.0),
+                    (float) settingDouble(config, "POS_PITCH", "POS_PITCH", 0.0),
                     onboardWorldEnvironment
             );
 
@@ -193,7 +279,9 @@ public class LoadConfig {
             );
 
             // Commands whitelist that the commands don't consume
-            List<String> commandWhitelist = config.getStringList("COMMAND_WHITELIST")
+            List<String> commandWhitelist = settingStringList(
+                    config, "COMMAND_WHITELIST", "COMMAND_WHITELIST"
+            )
                     .stream()
                     .map(String::toLowerCase)
                     .toList();
@@ -221,8 +309,7 @@ public class LoadConfig {
                     joinContent,
                     commandWhitelist,
                     onboardTeleport,
-                    debugForceOnboarding,
-                    debugLogging,
+                    debugOptions,
                     blockAdvancements,
                     onboardUnacceptedReturningPlayers,
                     blockExternalMessages,
@@ -248,6 +335,118 @@ public class LoadConfig {
 
     public static int nonNegative(int value) {
         return Math.max(0, value);
+    }
+
+    private Set<ConfigData.DebugOption> parseDebugOptions(List<String> configuredOptions) {
+        Set<ConfigData.DebugOption> options = EnumSet.noneOf(ConfigData.DebugOption.class);
+        for (String configuredOption : configuredOptions) {
+            if (configuredOption == null || configuredOption.isBlank()) continue;
+
+            String normalized = configuredOption.trim()
+                    .toUpperCase(java.util.Locale.ROOT)
+                    .replace('-', '_')
+                    .replace(' ', '_');
+            normalized = switch (normalized) {
+                case "LOG_SEQUENCESTART" -> "LOG_SEQUENCE_START";
+                case "LOG_RETURNLOCATIONCAPTURE" -> "LOG_RETURN_LOCATION_CAPTURE";
+                case "LOG_RETURNLOCATIONREUSE" -> "LOG_RETURN_LOCATION_REUSE";
+                case "LOG_RETURNLOCATIONRESOLUTION" -> "LOG_RETURN_LOCATION_RESOLUTION";
+                case "LOG_DEPARTURECLEANUP" -> "LOG_DEPARTURE_CLEANUP";
+                case "LOG_JOINQUITMESSAGEHANDLING" -> "LOG_JOIN_QUIT_MESSAGE_HANDLING";
+                case "LOG_DISCORDSRVAVATAR" -> "LOG_DISCORDSRV_AVATAR";
+                case "LOG_ACTIONBAR_LIFECYCLE" -> "LOG_ACTION_BAR_LIFECYCLE";
+                case "LOG_DEBUGFIXCLEANUP" -> "LOG_DEBUG_FIX_CLEANUP";
+                case "LOG_DISCORD_SRV_AVATAR" -> "LOG_DISCORDSRV_AVATAR";
+                default -> normalized;
+            };
+            try {
+                options.add(ConfigData.DebugOption.valueOf(normalized));
+            } catch (IllegalArgumentException exception) {
+                plugin.getLogger().warning(
+                        "Unknown DEBUG option '" + configuredOption + "'; ignoring it."
+                );
+            }
+        }
+        return options;
+    }
+
+    private static void migrateLegacyDebugOptions(
+            FileConfiguration config,
+            Set<ConfigData.DebugOption> debugOptions
+    ) {
+        if (config.getBoolean("DEBUG_FORCE_ONBOARDING", false)) {
+            debugOptions.add(ConfigData.DebugOption.FORCE_ONBOARDING);
+        }
+        if (config.getBoolean("DEBUG_LOGGING", false)) {
+            for (ConfigData.DebugOption option : ConfigData.DebugOption.values()) {
+                if (option != ConfigData.DebugOption.FORCE_ONBOARDING) {
+                    debugOptions.add(option);
+                }
+            }
+        }
+    }
+
+    private static String settingPath(String setting) {
+        return "ONBOARDSETTINGS." + setting;
+    }
+
+    private static boolean settingBoolean(
+            FileConfiguration config,
+            String setting,
+            String legacyPath,
+            boolean fallback
+    ) {
+        String path = settingPath(setting);
+        return config.contains(path, true)
+                ? config.getBoolean(path, fallback)
+                : config.getBoolean(legacyPath, fallback);
+    }
+
+    private static String settingString(
+            FileConfiguration config,
+            String setting,
+            String legacyPath,
+            String fallback
+    ) {
+        String path = settingPath(setting);
+        return config.contains(path, true)
+                ? config.getString(path, fallback)
+                : config.getString(legacyPath, fallback);
+    }
+
+    private static int settingInt(
+            FileConfiguration config,
+            String setting,
+            String legacyPath,
+            int fallback
+    ) {
+        String path = settingPath(setting);
+        return config.contains(path, true)
+                ? config.getInt(path, fallback)
+                : config.getInt(legacyPath, fallback);
+    }
+
+    private static double settingDouble(
+            FileConfiguration config,
+            String setting,
+            String legacyPath,
+            double fallback
+    ) {
+        String path = settingPath(setting);
+        return config.contains(path, true)
+                ? config.getDouble(path, fallback)
+                : config.getDouble(legacyPath, fallback);
+    }
+
+    private static List<String> settingStringList(
+            FileConfiguration config,
+            String setting,
+            String legacyPath
+    ) {
+        String path = settingPath(setting);
+        return config.contains(path, true)
+                ? config.getStringList(path)
+                : config.getStringList(legacyPath);
     }
 
     static int positiveOrDefault(int value, int fallback) {

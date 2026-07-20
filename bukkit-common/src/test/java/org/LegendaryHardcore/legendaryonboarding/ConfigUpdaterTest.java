@@ -9,6 +9,7 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -108,13 +109,14 @@ class ConfigUpdaterTest {
                 """);
 
         update(formerDefault, """
-                FIRST_JOIN_MESSAGE: "{yellow}{player} joined the server for the first time"
+                ONBOARDSETTINGS:
+                  INGAME_FIRST_JOIN_MESSAGE: "{yellow}{player} joined the server for the first time"
                 """);
 
         assertEquals(
                 "{yellow}{player} joined the server for the first time",
                 YamlConfiguration.loadConfiguration(formerDefault)
-                        .getString("FIRST_JOIN_MESSAGE")
+                        .getString("ONBOARDSETTINGS.INGAME_FIRST_JOIN_MESSAGE")
         );
 
         File custom = temporaryDirectory.resolve("custom.yml").toFile();
@@ -124,14 +126,55 @@ class ConfigUpdaterTest {
                 StandardCharsets.UTF_8
         );
         update(custom, """
-                FIRST_JOIN_MESSAGE: "{yellow}{player} joined the server for the first time"
+                ONBOARDSETTINGS:
+                  INGAME_FIRST_JOIN_MESSAGE: "{yellow}{player} joined the server for the first time"
                 """);
 
         assertEquals(
                 "Welcome {player}!",
                 YamlConfiguration.loadConfiguration(custom)
-                        .getString("FIRST_JOIN_MESSAGE")
+                        .getString("ONBOARDSETTINGS.INGAME_FIRST_JOIN_MESSAGE")
         );
+    }
+
+    @Test
+    void migratesLegacyOperationalSettingsIntoOnboardSettings() throws Exception {
+        File liveFile = writeLiveConfig("""
+                ONBOARD_GAMEMODE: creative
+                ONBOARD_TELEPORT: true
+                FIRST_JOIN_MESSAGE: "Welcome {player}!"
+                COMMAND_WHITELIST:
+                  - accept
+                  - spawn
+                DEBUG_FORCE_ONBOARDING: true
+                DEBUG_LOGGING: true
+                """);
+
+        update(liveFile, """
+                ONBOARDSETTINGS:
+                  GAMEMODE: adventure
+                  TELEPORT: false
+                  INGAME_FIRST_JOIN_MESSAGE: "First join"
+                  COMMAND_WHITELIST:
+                    - accept
+                DEBUG: []
+                """);
+
+        YamlConfiguration updated = YamlConfiguration.loadConfiguration(liveFile);
+        assertEquals("creative", updated.getString("ONBOARDSETTINGS.GAMEMODE"));
+        assertTrue(updated.getBoolean("ONBOARDSETTINGS.TELEPORT"));
+        assertEquals(
+                "Welcome {player}!",
+                updated.getString("ONBOARDSETTINGS.INGAME_FIRST_JOIN_MESSAGE")
+        );
+        assertEquals(List.of("accept", "spawn"), updated.getStringList(
+                "ONBOARDSETTINGS.COMMAND_WHITELIST"
+        ));
+        assertTrue(updated.getStringList("DEBUG").contains("FORCE_ONBOARDING"));
+        assertTrue(updated.getStringList("DEBUG").contains("LOG_START"));
+        assertFalse(updated.contains("ONBOARD_GAMEMODE"));
+        assertFalse(updated.contains("DEBUG_FORCE_ONBOARDING"));
+        assertFalse(updated.contains("DEBUG_LOGGING"));
     }
 
     private File writeLiveConfig(String yaml) throws Exception {

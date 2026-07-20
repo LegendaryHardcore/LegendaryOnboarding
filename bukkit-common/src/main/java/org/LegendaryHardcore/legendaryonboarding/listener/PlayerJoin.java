@@ -1,6 +1,7 @@
 package org.LegendaryHardcore.legendaryonboarding.listener;
 
 import net.kyori.adventure.text.Component;
+import org.LegendaryHardcore.legendaryonboarding.ConfigData;
 import org.LegendaryHardcore.legendaryonboarding.ConfigData.MessageConsumption;
 import org.LegendaryHardcore.legendaryonboarding.DiscordSrvBridge;
 import org.LegendaryHardcore.legendaryonboarding.DiscordSrvMessagesConfig;
@@ -122,7 +123,8 @@ public class PlayerJoin implements Listener {
         MessageConsumption discordSrvMode = plugin.getConfigData().getDiscordSrvJoinMessages();
         boolean consumeInGame = shouldConsumeMessage(inGameMode, onboardingRelated);
         boolean consumeDiscordSrv = shouldConsumeMessage(discordSrvMode, onboardingRelated);
-        plugin.debugLog(() -> "Join message handling player=" + event.getPlayer().getName()
+        plugin.debugLog(ConfigData.DebugOption.LOG_JOIN_QUIT_MESSAGE_HANDLING,
+                () -> "Join message handling player=" + event.getPlayer().getName()
                 + " onboardingRelated=" + onboardingRelated
                 + " inGameMode=" + inGameMode
                 + " discordSrvMode=" + discordSrvMode
@@ -134,7 +136,7 @@ public class PlayerJoin implements Listener {
         if (original == null) return;
 
         event.joinMessage(null);
-        if (consumeInGame && shouldRedistributeInGame(inGameMode)) {
+        if (shouldRedistributeInGame(inGameMode, consumeInGame)) {
             plugin.sendToNonOnboardingPlayers(original);
         }
         if (consumeDiscordSrv && shouldRedistributeDiscordSrv(
@@ -187,8 +189,16 @@ public class PlayerJoin implements Listener {
         };
     }
 
-    static boolean shouldRedistributeInGame(MessageConsumption mode) {
-        return mode == MessageConsumption.ALL;
+    /**
+     * The Bukkit join event is shared by in-game delivery and DiscordSRV. When
+     * DiscordSRV takes ownership on its own, replay the message in game unless
+     * this player's in-game mode explicitly suppresses it.
+     */
+    static boolean shouldRedistributeInGame(
+            MessageConsumption mode,
+            boolean consumeInGame
+    ) {
+        return !consumeInGame || mode == MessageConsumption.ALL;
     }
 
     static boolean shouldRedistributeDiscordSrv(

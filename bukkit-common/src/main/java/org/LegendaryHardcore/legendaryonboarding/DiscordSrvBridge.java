@@ -46,7 +46,8 @@ public final class DiscordSrvBridge {
                 return;
             }
             String avatarUrl = DiscordSRV.getAvatarUrl(player);
-            plugin.debugLog(() -> "DiscordSRV avatar URL for "
+            plugin.debugLog(ConfigData.DebugOption.LOG_DISCORDSRV_AVATAR,
+                    () -> "DiscordSRV avatar URL for "
                     + player.getName() + ": " + avatarUrl);
             MessageFormat format = template.toMessageFormat();
             Message message = DiscordSRV.translateMessage(

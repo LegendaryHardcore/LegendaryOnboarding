@@ -2,8 +2,8 @@ plugins {
     id "java"
 }
 
-def pluginVersion = "1.2.1"
-def buildNumber = 17
+def pluginVersion = "1.2.2"
+def buildNumber = 19
 
 ext {
     legendaryOnboardingVersion = pluginVersion

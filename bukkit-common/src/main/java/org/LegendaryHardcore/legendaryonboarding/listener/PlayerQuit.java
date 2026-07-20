@@ -1,6 +1,7 @@
 package org.LegendaryHardcore.legendaryonboarding.listener;
 
 import net.kyori.adventure.text.Component;
+import org.LegendaryHardcore.legendaryonboarding.ConfigData;
 import org.LegendaryHardcore.legendaryonboarding.ConfigData.MessageConsumption;
 import org.LegendaryHardcore.legendaryonboarding.DiscordSrvBridge;
 import org.LegendaryHardcore.legendaryonboarding.DiscordSrvMessagesConfig;
@@ -24,7 +25,8 @@ public class PlayerQuit implements Listener {
         boolean onboardingActive = plugin.isOnboardingActive(event.getPlayer().getUniqueId());
         boolean consumeInGame = PlayerJoin.shouldConsumeMessage(inGameMode, onboardingActive);
         boolean consumeDiscordSrv = PlayerJoin.shouldConsumeMessage(discordSrvMode, onboardingActive);
-        plugin.debugLog(() -> "Quit message handling player=" + event.getPlayer().getName()
+        plugin.debugLog(ConfigData.DebugOption.LOG_JOIN_QUIT_MESSAGE_HANDLING,
+                () -> "Quit message handling player=" + event.getPlayer().getName()
                 + " onboardingActive=" + onboardingActive
                 + " inGameMode=" + inGameMode
                 + " discordSrvMode=" + discordSrvMode
@@ -36,7 +38,7 @@ public class PlayerQuit implements Listener {
         if (original == null) return;
 
         event.quitMessage(null);
-        if (consumeInGame && PlayerJoin.shouldRedistributeInGame(inGameMode)) {
+        if (PlayerJoin.shouldRedistributeInGame(inGameMode, consumeInGame)) {
             plugin.sendToNonOnboardingPlayers(original);
         }
         if (consumeDiscordSrv && PlayerJoin.shouldRedistributeDiscordSrv(

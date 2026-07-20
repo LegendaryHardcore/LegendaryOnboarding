@@ -27,35 +27,36 @@ class LoadConfigTest {
                 .getResourceAsStream("config.yml")) {
             assertNotNull(defaults);
             var config = ConfigUpdater.load(defaults);
-            assertFalse(config.getBoolean("DEBUG_FORCE_ONBOARDING", true));
-            assertFalse(config.getBoolean("DEBUG_LOGGING", true));
-            assertTrue(config.getBoolean("BLOCK_ADVANCEMENTS", false));
-            assertFalse(config.getBoolean("ONBOARD_UNACCEPTED_RETURNING_PLAYERS", true));
-            assertTrue(config.getBoolean("BLOCK_EXTERNAL_MESSAGES_DURING_ONBOARDING", false));
-            assertEquals("SOME", config.getString("MESSAGE_CONSUMPTION.IN_GAME.JOIN"));
-            assertEquals("SOME", config.getString("MESSAGE_CONSUMPTION.IN_GAME.QUIT"));
-            assertEquals("SOME", config.getString("MESSAGE_CONSUMPTION.DISCORDSRV.JOIN"));
-            assertEquals("SOME", config.getString("MESSAGE_CONSUMPTION.DISCORDSRV.QUIT"));
-            assertEquals("MONITOR", config.getString("EVENT_PRIORITIES.CHAT_CONSUMPTION"));
-            assertEquals("HIGHEST", config.getString("EVENT_PRIORITIES.JOIN_MESSAGE"));
-            assertEquals("HIGHEST", config.getString("EVENT_PRIORITIES.QUIT_MESSAGE"));
-            assertTrue(config.getBoolean("HIDE_ONBOARDING_PLAYERS_FROM_TAB", false));
-            assertFalse(config.getBoolean("CLEANUP_FALLBACK_ENABLED", true));
-            assertEquals("world", config.getString("CLEANUP_FALLBACK_WORLD"));
-            assertEquals("NORMAL", config.getString("CLEANUP_FALLBACK_WORLD_TYPE"));
-            assertEquals(0.0, config.getDouble("CLEANUP_FALLBACK_X"));
-            assertEquals(64.0, config.getDouble("CLEANUP_FALLBACK_Y"));
-            assertEquals(0.0, config.getDouble("CLEANUP_FALLBACK_Z"));
-            assertEquals(5000, config.getInt("CLEANUP_FALLBACK_RADIUS"));
-            assertEquals(64, config.getInt("RETURN_DESIRED_Y"));
-            assertEquals("NORMAL", config.getString("POS_WORLD_TYPE"));
+            assertTrue(config.getStringList("DEBUG").isEmpty());
+            assertTrue(config.getBoolean("ONBOARDSETTINGS.BLOCK_ADVANCEMENTS", false));
+            assertFalse(config.getBoolean("ONBOARDSETTINGS.FORCE_RETURNING_PLAYERS", true));
+            assertTrue(config.getBoolean(
+                    "ONBOARDSETTINGS.BLOCK_EXTERNAL_MESSAGES_DURING_ONBOARDING", false
+            ));
+            assertEquals("SOME", config.getString("ONBOARDSETTINGS.MESSAGE_CONSUMPTION.IN_GAME.JOIN"));
+            assertEquals("SOME", config.getString("ONBOARDSETTINGS.MESSAGE_CONSUMPTION.IN_GAME.QUIT"));
+            assertEquals("ALL", config.getString("ONBOARDSETTINGS.MESSAGE_CONSUMPTION.DISCORDSRV.JOIN"));
+            assertEquals("ALL", config.getString("ONBOARDSETTINGS.MESSAGE_CONSUMPTION.DISCORDSRV.QUIT"));
+            assertEquals("HIGHEST", config.getString("ONBOARDSETTINGS.EVENT_PRIORITIES.CHAT_CONSUMPTION"));
+            assertEquals("HIGHEST", config.getString("ONBOARDSETTINGS.EVENT_PRIORITIES.JOIN_MESSAGE"));
+            assertEquals("HIGHEST", config.getString("ONBOARDSETTINGS.EVENT_PRIORITIES.QUIT_MESSAGE"));
+            assertTrue(config.getBoolean("ONBOARDSETTINGS.HIDE_ONBOARDING_PLAYERS_FROM_TAB", false));
+            assertFalse(config.getBoolean("ONBOARDSETTINGS.CLEANUP_FALLBACK_ENABLED", true));
+            assertEquals("world", config.getString("ONBOARDSETTINGS.CLEANUP_FALLBACK_WORLD"));
+            assertEquals("NORMAL", config.getString("ONBOARDSETTINGS.CLEANUP_FALLBACK_WORLD_TYPE"));
+            assertEquals(0.0, config.getDouble("ONBOARDSETTINGS.CLEANUP_FALLBACK_X"));
+            assertEquals(64.0, config.getDouble("ONBOARDSETTINGS.CLEANUP_FALLBACK_Y"));
+            assertEquals(0.0, config.getDouble("ONBOARDSETTINGS.CLEANUP_FALLBACK_Z"));
+            assertEquals(5000, config.getInt("ONBOARDSETTINGS.CLEANUP_FALLBACK_RADIUS"));
+            assertEquals(64, config.getInt("ONBOARDSETTINGS.RETURN_DESIRED_Y"));
+            assertEquals("NORMAL", config.getString("ONBOARDSETTINGS.POS_WORLD_TYPE"));
             assertEquals(
                     "{yellow}{player} is currently onboarding.",
-                    config.getString("ONBOARDING_DAMAGE_MESSAGE")
+                    config.getString("ONBOARDSETTINGS.DAMAGE_MESSAGE")
             );
             assertEquals(
                     "{yellow}{player} joined the server for the first time",
-                    config.getString("FIRST_JOIN_MESSAGE")
+                    config.getString("ONBOARDSETTINGS.INGAME_FIRST_JOIN_MESSAGE")
             );
         }
     }

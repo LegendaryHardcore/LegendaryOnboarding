@@ -4,6 +4,7 @@ import org.bukkit.Location;
 import org.bukkit.SoundCategory;
 import org.bukkit.World;
 import org.bukkit.event.EventPriority;
+import java.util.Set;
 import java.util.List;
 
 /*
@@ -14,6 +15,22 @@ public final class ConfigData {
         NONE,
         SOME,
         ALL
+    }
+
+    /** Named diagnostics enabled by entries in config.yml's DEBUG list. */
+    public enum DebugOption {
+        FORCE_ONBOARDING,
+        LOG_START,
+        LOG_END,
+        LOG_SEQUENCE_START,
+        LOG_RETURN_LOCATION_CAPTURE,
+        LOG_RETURN_LOCATION_REUSE,
+        LOG_RETURN_LOCATION_RESOLUTION,
+        LOG_DEPARTURE_CLEANUP,
+        LOG_JOIN_QUIT_MESSAGE_HANDLING,
+        LOG_DISCORDSRV_AVATAR,
+        LOG_ACTION_BAR_LIFECYCLE,
+        LOG_DEBUG_FIX_CLEANUP
     }
 
     private final boolean titleSequenceEnabled;
@@ -27,8 +44,7 @@ public final class ConfigData {
     private final List<TitleContent> promptAccept;
     private final List<TitleContent> joinSequenceContent;
     private final boolean onboardTeleport;
-    private final boolean debugForceOnboarding;
-    private final boolean debugLogging;
+    private final Set<DebugOption> debugOptions;
     private final boolean blockAdvancements;
     private final boolean onboardUnacceptedReturningPlayers;
     private final boolean blockExternalMessages;
@@ -114,8 +130,7 @@ public final class ConfigData {
             List<TitleContent> joinSequenceContent,
             List<String> commandWhitelist,
             boolean onboardTeleport,
-            boolean debugForceOnboarding,
-            boolean debugLogging,
+            Set<DebugOption> debugOptions,
             boolean blockAdvancements,
             boolean onboardUnacceptedReturningPlayers,
             boolean blockExternalMessages,
@@ -143,8 +158,7 @@ public final class ConfigData {
         this.joinSequenceContent = joinSequenceContent;
         this.commandWhitelist = commandWhitelist;
         this.onboardTeleport = onboardTeleport;
-        this.debugForceOnboarding = debugForceOnboarding;
-        this.debugLogging = debugLogging;
+        this.debugOptions = Set.copyOf(debugOptions);
         this.blockAdvancements = blockAdvancements;
         this.onboardUnacceptedReturningPlayers = onboardUnacceptedReturningPlayers;
         this.blockExternalMessages = blockExternalMessages;
@@ -204,9 +218,17 @@ public final class ConfigData {
 
     public boolean isOnboardTeleport() { return onboardTeleport; }
 
-    public boolean isDebugForceOnboarding() { return debugForceOnboarding; }
+    public boolean isDebugForceOnboarding() {
+        return debugOptions.contains(DebugOption.FORCE_ONBOARDING);
+    }
 
-    public boolean isDebugLogging() { return debugLogging; }
+    public boolean isDebugLogging() {
+        return debugOptions.stream().anyMatch(option -> option != DebugOption.FORCE_ONBOARDING);
+    }
+
+    public boolean isDebugEnabled(DebugOption option) {
+        return debugOptions.contains(option);
+    }
 
     public boolean isBlockAdvancements() { return blockAdvancements; }
 

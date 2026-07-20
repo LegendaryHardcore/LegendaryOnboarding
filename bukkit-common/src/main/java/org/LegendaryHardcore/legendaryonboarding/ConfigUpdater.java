@@ -14,6 +14,7 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Level;
@@ -27,6 +28,38 @@ public final class ConfigUpdater {
             "{yellow}{player} has joined for the first time.";
     private static final String CURRENT_FIRST_JOIN_MESSAGE =
             "{yellow}{player} joined the server for the first time";
+    private static final String[][] LEGACY_SETTING_PATHS = {
+            {"ONBOARD_GAMEMODE", "ONBOARDSETTINGS.GAMEMODE"},
+            {"ONBOARD_TELEPORT", "ONBOARDSETTINGS.TELEPORT"},
+            {"POS_WORLD", "ONBOARDSETTINGS.POS_WORLD"},
+            {"POS_WORLD_TYPE", "ONBOARDSETTINGS.POS_WORLD_TYPE"},
+            {"POS_X", "ONBOARDSETTINGS.POS_X"},
+            {"POS_Y", "ONBOARDSETTINGS.POS_Y"},
+            {"POS_Z", "ONBOARDSETTINGS.POS_Z"},
+            {"POS_YAW", "ONBOARDSETTINGS.POS_YAW"},
+            {"POS_PITCH", "ONBOARDSETTINGS.POS_PITCH"},
+            {"BLOCK_ADVANCEMENTS", "ONBOARDSETTINGS.BLOCK_ADVANCEMENTS"},
+            {"ONBOARD_UNACCEPTED_RETURNING_PLAYERS", "ONBOARDSETTINGS.FORCE_RETURNING_PLAYERS"},
+            {"BLOCK_EXTERNAL_MESSAGES_DURING_ONBOARDING",
+                    "ONBOARDSETTINGS.BLOCK_EXTERNAL_MESSAGES_DURING_ONBOARDING"},
+            {"MESSAGE_CONSUMPTION", "ONBOARDSETTINGS.MESSAGE_CONSUMPTION"},
+            {"HIDE_ONBOARDING_PLAYERS_FROM_TAB",
+                    "ONBOARDSETTINGS.HIDE_ONBOARDING_PLAYERS_FROM_TAB"},
+            {"CLEANUP_FALLBACK_ENABLED", "ONBOARDSETTINGS.CLEANUP_FALLBACK_ENABLED"},
+            {"CLEANUP_FALLBACK_WORLD", "ONBOARDSETTINGS.CLEANUP_FALLBACK_WORLD"},
+            {"CLEANUP_FALLBACK_WORLD_TYPE", "ONBOARDSETTINGS.CLEANUP_FALLBACK_WORLD_TYPE"},
+            {"CLEANUP_FALLBACK_X", "ONBOARDSETTINGS.CLEANUP_FALLBACK_X"},
+            {"CLEANUP_FALLBACK_Y", "ONBOARDSETTINGS.CLEANUP_FALLBACK_Y"},
+            {"CLEANUP_FALLBACK_Z", "ONBOARDSETTINGS.CLEANUP_FALLBACK_Z"},
+            {"CLEANUP_FALLBACK_YAW", "ONBOARDSETTINGS.CLEANUP_FALLBACK_YAW"},
+            {"CLEANUP_FALLBACK_PITCH", "ONBOARDSETTINGS.CLEANUP_FALLBACK_PITCH"},
+            {"CLEANUP_FALLBACK_RADIUS", "ONBOARDSETTINGS.CLEANUP_FALLBACK_RADIUS"},
+            {"RETURN_DESIRED_Y", "ONBOARDSETTINGS.RETURN_DESIRED_Y"},
+            {"ONBOARDING_DAMAGE_MESSAGE", "ONBOARDSETTINGS.DAMAGE_MESSAGE"},
+            {"FIRST_JOIN_MESSAGE", "ONBOARDSETTINGS.INGAME_FIRST_JOIN_MESSAGE"},
+            {"COMMAND_WHITELIST", "ONBOARDSETTINGS.COMMAND_WHITELIST"},
+            {"EVENT_PRIORITIES", "ONBOARDSETTINGS.EVENT_PRIORITIES"}
+    };
 
     private final JavaPlugin plugin;
 
@@ -90,6 +123,31 @@ public final class ConfigUpdater {
         if (OLD_FIRST_JOIN_MESSAGE.equals(config.getString("FIRST_JOIN_MESSAGE"))) {
             config.set("FIRST_JOIN_MESSAGE", CURRENT_FIRST_JOIN_MESSAGE);
         }
+        for (String[] path : LEGACY_SETTING_PATHS) {
+            migrate(config, path[0], path[1]);
+        }
+        migrateLegacyDebugOptions(config);
+    }
+
+    private static void migrateLegacyDebugOptions(YamlConfiguration config) {
+        if (!config.contains("DEBUG")) {
+            ArrayList<String> debugOptions = new ArrayList<>();
+            if (config.getBoolean("DEBUG_FORCE_ONBOARDING", false)) {
+                debugOptions.add("FORCE_ONBOARDING");
+            }
+            if (config.getBoolean("DEBUG_LOGGING", false)) {
+                for (ConfigData.DebugOption option : ConfigData.DebugOption.values()) {
+                    if (option != ConfigData.DebugOption.FORCE_ONBOARDING) {
+                        debugOptions.add(option.name());
+                    }
+                }
+            }
+            if (!debugOptions.isEmpty()) {
+                config.set("DEBUG", debugOptions);
+            }
+        }
+        config.set("DEBUG_FORCE_ONBOARDING", null);
+        config.set("DEBUG_LOGGING", null);
     }
 
     static YamlConfiguration load(File file)
@@ -113,11 +171,13 @@ public final class ConfigUpdater {
     }
 
     static void migrate(YamlConfiguration config, String oldPath, String newPath) {
-        if (!config.contains(oldPath) || config.contains(newPath)) {
+        if (!config.contains(oldPath)) {
             return;
         }
 
-        config.set(newPath, config.get(oldPath));
+        if (!config.contains(newPath)) {
+            config.set(newPath, config.get(oldPath));
+        }
         config.set(oldPath, null);
     }
 

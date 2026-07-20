@@ -70,6 +70,10 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
         return config != null && config.isDebugLogging();
     }
 
+    public boolean isDebugEnabled(ConfigData.DebugOption option) {
+        return config != null && config.isDebugEnabled(option);
+    }
+
     public void debugLog(String message) {
         if (!isDebugLoggingEnabled()) return;
         getLogger().info("[Debug] " + message);
@@ -80,8 +84,18 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
         getLogger().info("[Debug] " + messageSupplier.get());
     }
 
+    public void debugLog(ConfigData.DebugOption option, Supplier<String> messageSupplier) {
+        if (!isDebugEnabled(option)) return;
+        getLogger().info("[Debug] " + messageSupplier.get());
+    }
+
     public void debugActionBar(Player player, String action, String detail) {
-        if (!isDebugLoggingEnabled()) return;
+        ConfigData.DebugOption option = switch (detail) {
+            case "applyDebugFix", "clearAllPlayerEffects" ->
+                    ConfigData.DebugOption.LOG_DEBUG_FIX_CLEANUP;
+            default -> ConfigData.DebugOption.LOG_ACTION_BAR_LIFECYCLE;
+        };
+        if (!isDebugEnabled(option)) return;
         getLogger().info("[Debug] ActionBar " + action
                 + " player=" + player.getName()
                 + " detail=" + detail);
@@ -365,7 +379,7 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
         boolean newReturnLocation = refreshReturnLocation
                 || !pendingStore.hasPending(uuid)
                 || pendingStore.isCleanupRequired(uuid);
-        debugLog(() -> "startOnboarding player=" + player.getName()
+        debugLog(ConfigData.DebugOption.LOG_START, () -> "startOnboarding player=" + player.getName()
                 + " refreshReturnLocation=" + refreshReturnLocation
                 + " hasPending=" + pendingStore.hasPending(uuid)
                 + " cleanupRequired=" + pendingStore.isCleanupRequired(uuid)
@@ -373,7 +387,8 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
                 + " debugForced=" + debugForced);
         if (!newReturnLocation) {
             pendingStore.configureSession(uuid, debugForced, announceWhenComplete);
-            debugLog(() -> "Reusing saved return location for " + player.getName());
+            debugLog(ConfigData.DebugOption.LOG_RETURN_LOCATION_REUSE,
+                    () -> "Reusing saved return location for " + player.getName());
             beginOnboardingSequence(player, announceWhenComplete, debugForced);
             return true;
         }
@@ -444,7 +459,8 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
                 debugForced,
                 announceWhenComplete
         );
-        debugLog(() -> "Captured return location for " + player.getName()
+        debugLog(ConfigData.DebugOption.LOG_RETURN_LOCATION_CAPTURE,
+                () -> "Captured return location for " + player.getName()
                 + " at " + formatDebugLocation(returnLocation));
         beginOnboardingSequence(player, announceWhenComplete, debugForced);
     }
@@ -476,7 +492,8 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
         player.setFireTicks(0);
         player.setFallDistance(0f);
         hideOnboardingPlayerFromTab(player);
-        debugLog(() -> "Beginning onboarding sequence for " + player.getName()
+        debugLog(ConfigData.DebugOption.LOG_SEQUENCE_START,
+                () -> "Beginning onboarding sequence for " + player.getName()
                 + " announceWhenComplete=" + announceWhenComplete
                 + " debugForced=" + debugForced);
         platformScheduler.runEntity(player, () -> rulesSequence.start(player));
@@ -529,7 +546,8 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
         }
         // Ordinary disconnects must remain resumable. Reserve cleanupRequired
         // for explicit cleanup flows such as debug end or plugin/server shutdown.
-        debugLog(() -> "Deferring departure cleanup for " + player.getName()
+        debugLog(ConfigData.DebugOption.LOG_DEPARTURE_CLEANUP,
+                () -> "Deferring departure cleanup for " + player.getName()
                 + " hasPending=" + hasPending
                 + " onboardingActive=" + isOnboardingActive(uuid)
                 + " forcedCleanupPending=" + forcedCleanupPending);
@@ -729,7 +747,8 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
         joinSequenceActive.remove(uuid);
         debugForcedPlayers.remove(uuid);
         restoreOnboardingPlayerToTab(player);
-        debugLog(() -> "Completed onboarding for " + player.getName());
+        debugLog(ConfigData.DebugOption.LOG_END,
+                () -> "Completed onboarding for " + player.getName());
         if (suppressedJoinMessages.remove(uuid)) {
             platformScheduler.runEntityDelayed(
                     player,
@@ -793,7 +812,8 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
             Location preferred,
             Consumer<Location> callback
     ) {
-        debugLog(() -> "Resolving return location for " + player.getName()
+        debugLog(ConfigData.DebugOption.LOG_RETURN_LOCATION_RESOLUTION,
+                () -> "Resolving return location for " + player.getName()
                 + " preferred=" + formatDebugLocation(preferred));
         List<ReturnSearch> searches = new ArrayList<>();
         if (preferred != null && preferred.getWorld() != null) {
@@ -886,7 +906,8 @@ public abstract class LegendaryOnboarding extends JavaPlugin {
             Location result = safe;
             platformScheduler.runEntity(player, () -> {
                 if (result != null) {
-                    debugLog(() -> "Resolved return location for " + player.getName()
+                    debugLog(ConfigData.DebugOption.LOG_RETURN_LOCATION_RESOLUTION,
+                            () -> "Resolved return location for " + player.getName()
                             + " to " + formatDebugLocation(result)
                             + " using " + search.mode());
                     callback.accept(result);

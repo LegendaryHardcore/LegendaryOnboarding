@@ -35,10 +35,11 @@ class PlayerJoinTest {
     }
 
     @Test
-    void onlyAllModeRedistributesInGameMessages() {
-        assertFalse(PlayerJoin.shouldRedistributeInGame(MessageConsumption.NONE));
-        assertFalse(PlayerJoin.shouldRedistributeInGame(MessageConsumption.SOME));
-        assertTrue(PlayerJoin.shouldRedistributeInGame(MessageConsumption.ALL));
+    void redistributesInGameMessagesWhenDiscordClearsTheSharedEvent() {
+        assertTrue(PlayerJoin.shouldRedistributeInGame(MessageConsumption.NONE, false));
+        assertTrue(PlayerJoin.shouldRedistributeInGame(MessageConsumption.SOME, false));
+        assertFalse(PlayerJoin.shouldRedistributeInGame(MessageConsumption.SOME, true));
+        assertTrue(PlayerJoin.shouldRedistributeInGame(MessageConsumption.ALL, true));
     }
 
     @Test

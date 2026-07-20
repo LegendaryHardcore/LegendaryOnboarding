@@ -37,36 +37,36 @@ Set the following values, then run `/lo reload`:
 ```yaml
 # config.yml
 SERVER_NAME: "UAT Server"
-ONBOARD_GAMEMODE: "adventure"
-ONBOARD_TELEPORT: true
-DEBUG_FORCE_ONBOARDING: false
-DEBUG_LOGGING: false
-ONBOARD_UNACCEPTED_RETURNING_PLAYERS: false
-BLOCK_ADVANCEMENTS: true
-BLOCK_EXTERNAL_MESSAGES_DURING_ONBOARDING: true
-MESSAGE_CONSUMPTION:
-  IN_GAME:
-    JOIN: "SOME"
-    QUIT: "SOME"
-  DISCORDSRV:
-    JOIN: "SOME"
-    QUIT: "SOME"
-HIDE_ONBOARDING_PLAYERS_FROM_TAB: true
-ONBOARDING_DAMAGE_MESSAGE: "{yellow}{player} is currently onboarding."
-FIRST_JOIN_MESSAGE: "{yellow}{player} joined the server for the first time"
-CLEANUP_FALLBACK_ENABLED: true
-CLEANUP_FALLBACK_WORLD: "world"
-CLEANUP_FALLBACK_WORLD_TYPE: "NORMAL"
-CLEANUP_FALLBACK_X: 0
-CLEANUP_FALLBACK_Y: 64
-CLEANUP_FALLBACK_Z: 0
-CLEANUP_FALLBACK_RADIUS: 5000
-RETURN_DESIRED_Y: 64
-POS_WORLD: "world"
-POS_WORLD_TYPE: "NORMAL"
-POS_X: 0
-POS_Y: 120
-POS_Z: 0
+ONBOARDSETTINGS:
+  GAMEMODE: "adventure"
+  TELEPORT: true
+  FORCE_RETURNING_PLAYERS: false
+  BLOCK_ADVANCEMENTS: true
+  BLOCK_EXTERNAL_MESSAGES_DURING_ONBOARDING: true
+  MESSAGE_CONSUMPTION:
+    IN_GAME:
+      JOIN: "SOME"
+      QUIT: "SOME"
+    DISCORDSRV:
+      JOIN: "SOME"
+      QUIT: "SOME"
+  HIDE_ONBOARDING_PLAYERS_FROM_TAB: true
+  DAMAGE_MESSAGE: "{yellow}{player} is currently onboarding."
+  INGAME_FIRST_JOIN_MESSAGE: "{yellow}{player} joined the server for the first time"
+  CLEANUP_FALLBACK_ENABLED: true
+  CLEANUP_FALLBACK_WORLD: "world"
+  CLEANUP_FALLBACK_WORLD_TYPE: "NORMAL"
+  CLEANUP_FALLBACK_X: 0
+  CLEANUP_FALLBACK_Y: 64
+  CLEANUP_FALLBACK_Z: 0
+  CLEANUP_FALLBACK_RADIUS: 5000
+  RETURN_DESIRED_Y: 64
+  POS_WORLD: "world"
+  POS_WORLD_TYPE: "NORMAL"
+  POS_X: 0
+  POS_Y: 120
+  POS_Z: 0
+DEBUG: []
 ```
 
 ```yaml
@@ -107,14 +107,14 @@ enabled.
 
 | ID | Test | Expected | Result | Notes |
 | --- | --- | --- | --- | --- |
-| CFG-01 | Set `titlesequence.yml` `ENABLED: false`, set `POS_WORLD` to a missing world, and restart. | Plugin remains enabled because the onboarding world is not required while the sequence is disabled. | | |
+| CFG-01 | Set `titlesequence.yml` `ENABLED: false`, set `ONBOARDSETTINGS.POS_WORLD` to a missing world, and restart. | Plugin remains enabled because the onboarding world is not required while the sequence is disabled. | | |
 | CFG-02 | Restore the baseline, run `/lo reload`, and inspect the console. | `config.yml`, `titlesequence.yml`, and `discordSRVmessages.yml` reload without an exception. | | |
 | CFG-03 | As Tester, run `/lo reload`. | Command is denied and configuration is unchanged. | | |
 | CFG-04 | Type `/lo `, `/lo re`, `/lo debug `, and `/lo debug isAccepted Tester `. | Tab completion offers the appropriate subcommands, players, and `true`, `false`, `remove` values. | | |
 | CFG-05 | Start onboarding, set `ENABLED: false`, and run `/lo reload`. | The active player is fully released and their pending cleanup completes. | | |
 | CFG-06 | Run `/lo` and `/lo help` as Tester, then as Admin. | Both forms show help. Tester sees only `/accept` and `/lo help`; Admin sees reload, status, and every debug command. | | |
-| CFG-07 | Set `POS_WORLD` to a missing name and `POS_WORLD_TYPE: NORMAL`, then start onboarding while a normal world is loaded. | The player is teleported to the configured coordinates in a loaded normal world, not left in their current world. | | |
-| CFG-08 | Set `CLEANUP_FALLBACK_WORLD` to a missing name and `CLEANUP_FALLBACK_WORLD_TYPE: NORMAL`; complete onboarding from an End onboarding world with no valid saved return. | Cleanup uses a loaded normal world and never releases the player into the End onboarding world. | | |
+| CFG-07 | Set `ONBOARDSETTINGS.POS_WORLD` to a missing name and `ONBOARDSETTINGS.POS_WORLD_TYPE: NORMAL`, then start onboarding while a normal world is loaded. | The player is teleported to the configured coordinates in a loaded normal world, not left in their current world. | | |
+| CFG-08 | Set `ONBOARDSETTINGS.CLEANUP_FALLBACK_WORLD` to a missing name and `ONBOARDSETTINGS.CLEANUP_FALLBACK_WORLD_TYPE: NORMAL`; complete onboarding from an End onboarding world with no valid saved return. | Cleanup uses a loaded normal world and never releases the player into the End onboarding world. | | |
 
 ## Entry And Sequence
 
@@ -125,8 +125,8 @@ enabled.
 | ENT-03 | Watch the action bar through the rules sequence. | Countdown decreases once per second and `/accept` is unavailable until it completes. | | |
 | ENT-04 | Run `/accept` before the countdown completes. | Player receives the not-ready response; no exception occurs and onboarding remains active. | | |
 | ENT-05 | Put `{newline}` in configured chat and in a subtitle. | Chat renders a line break. The subtitle renders a space and no LF control icon. | | |
-| ENT-06 | Set `DEBUG_FORCE_ONBOARDING: true`, reload, and reconnect an accepted Tester. | Tester enters onboarding without deleting the existing accepted record. | | |
-| ENT-07 | Disable force mode, enable `ONBOARD_UNACCEPTED_RETURNING_PLAYERS`, set Tester to unaccepted, and reconnect. | Returning unaccepted Tester enters onboarding. | | |
+| ENT-06 | Add `FORCE_ONBOARDING` to `DEBUG`, reload, and reconnect an accepted Tester. | Tester enters onboarding without deleting the existing accepted record. | | |
+| ENT-07 | Remove `FORCE_ONBOARDING`, enable `ONBOARDSETTINGS.FORCE_RETURNING_PLAYERS`, set Tester to unaccepted, and reconnect. | Returning unaccepted Tester enters onboarding. | | |
 | ENT-08 | Disable both testing toggles and reconnect a returning unaccepted Tester with no pending entry. | Tester is not automatically onboarded. | | |
 
 ## Isolation And Protection
@@ -154,7 +154,7 @@ enabled.
 | END-03 | After completion, move and turn, take damage after the temporary protection expires, inspect tab visibility, and check flight/invisibility/invulnerability. | Player is fully released; normal movement, visibility, damage, and flight rules are restored. | | |
 | END-04 | Inspect potion effects after normal completion. | Sequence-managed effects are removed. Unrelated pre-existing effects are not removed by normal completion. | | |
 | END-05 | Reconnect the accepted Tester with testing toggles disabled. | Tester bypasses onboarding and any stale pending entry is cleared. | | |
-| END-06 | Complete onboarding with DiscordSRV enabled and `MESSAGE_CONSUMPTION.DISCORDSRV.JOIN: SOME`. | The configured first-join announcement is visible in game and sent once through the `discordSRVmessages.yml` `FIRST_JOIN` template. No premature DiscordSRV first-join message appears. | | |
+| END-06 | Complete onboarding with DiscordSRV enabled and `ONBOARDSETTINGS.MESSAGE_CONSUMPTION.DISCORDSRV.JOIN: SOME`. | The configured first-join announcement is visible in game and sent once through the `discordSRVmessages.yml` `FIRST_JOIN` template. No premature DiscordSRV first-join message appears. | | |
 | END-07 | Set both DiscordSRV message-consumption modes to `ALL`, then join and quit as an accepted Tester. | Native DiscordSRV announcements remain suppressed. The `JOIN` and `QUIT` templates from `discordSRVmessages.yml` appear once each in Discord. | | |
 
 ## Recovery And Cleanup
@@ -180,14 +180,14 @@ enabled.
 
 | ID | Test | Expected | Result | Notes |
 | --- | --- | --- | --- | --- |
-| RET-01 | Start Tester at maximum build height above a safe area near Y=64, then complete onboarding. | Return search uses the saved X/Z near `RETURN_DESIRED_Y`; Tester is not returned to build height merely because that was the original Y. | | |
+| RET-01 | Start Tester at maximum build height above a safe area near Y=64, then complete onboarding. | Return search uses the saved X/Z near `ONBOARDSETTINGS.RETURN_DESIRED_Y`; Tester is not returned to build height merely because that was the original Y. | | |
 | RET-02 | Block the exact desired Y while leaving a nearby lower or higher safe level. | The nearest safe level is selected, preferring the lower level when distances are equal. | | |
 | RET-03 | Make all levels near desired Y unsafe but leave the original saved Y safe. | Original saved Y is used after the desired-Y search fails. | | |
 | RET-04 | Remove the saved world and verify the configured fallback. | Safe configured fallback is used before world-spawn fallbacks. | | |
 | RET-05 | Set fallback X/Z to `0/0`, radius to `5000`, invalidate the saved destination, and repeat cleanup several times. | Every fallback return is on safe ground with X and Z each between `-5000` and `+5000`; results vary across runs. | | |
-| RET-06 | Set `CLEANUP_FALLBACK_RADIUS: 0` and repeat RET-05. | The fixed fallback area is used without wide randomization. | | |
+| RET-06 | Set `ONBOARDSETTINGS.CLEANUP_FALLBACK_RADIUS: 0` and repeat RET-05. | The fixed fallback area is used without wide randomization. | | |
 | RET-07 | Use a test column with a safe stone cave floor below a safe grass, dirt-family, or leaves surface. Complete onboarding or trigger fallback at that X/Z. | Tester is placed above the highest preferred surface and is not placed on the cave floor. | | |
-| RET-08 | Test a snowy mountain with a cave near `RETURN_DESIRED_Y`, where the exposed surface is substantially higher. | Tester is placed on the safe exposed snow/stone/ice surface rather than the cave floor. | | |
+| RET-08 | Test a snowy mountain with a cave near `ONBOARDSETTINGS.RETURN_DESIRED_Y`, where the exposed surface is substantially higher. | Tester is placed on the safe exposed snow/stone/ice surface rather than the cave floor. | | |
 | RET-09 | Use a return or random fallback coordinate in an ocean, including a kelp or bubble-column area. | The submerged column is rejected and Tester is returned to a dry exposed surface elsewhere. | | |
 
 ## Admin Commands And Persistence

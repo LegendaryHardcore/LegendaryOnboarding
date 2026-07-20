@@ -1,6 +1,7 @@
 # Direct Discord announcements sent by LegendaryOnboarding through DiscordSRV.
 #
-# How this file is used depends on MESSAGE_CONSUMPTION.DISCORDSRV in config.yml:
+# How this file is used depends on ONBOARDSETTINGS.MESSAGE_CONSUMPTION.DISCORDSRV
+# in config.yml:
 # - NONE: DiscordSRV uses its own native messages.yml templates; these are unused.
 # - SOME: FIRST_JOIN replaces an onboarding player's delayed first join. Disable
 #   DiscordSRV's MinecraftPlayerFirstJoinMessage, but leave its normal join/quit
